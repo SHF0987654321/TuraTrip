@@ -34,7 +34,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend/turismo-app
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: turatrip-frontend
     restart: always
