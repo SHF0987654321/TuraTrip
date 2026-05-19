@@ -1,0 +1,61 @@
+services:
+  db:
+    image: mysql:9.7
+    container_name: turatrip-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: turatrip_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Sin exponer puerto 3306 al exterior
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: turatrip-backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/turatrip_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+    # Sin exponer 8080 al exterior, Nginx hace el proxy
+
+  frontend:
+    build:
+      context: ./frontend/turismo-app
+      dockerfile: Dockerfile
+    container_name: turatrip-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL}
+
+  nginx:
+    image: nginx:alpine
+    container_name: turatrip-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  mysql_data:
