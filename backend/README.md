@@ -1,54 +1,54 @@
 # TuraTrip — Backend
 
-API REST construida con Spring Boot para la plataforma de turismo social TuraTrip.
+API REST construida con Spring Boot 3 y Java 21.
 
-## Requisitos
+## Requisitos para desarrollo local (sin Docker)
+
 - Java 21+
 - Maven 3.9+
-- Docker (para la base de datos)
+- MySQL 9.7 corriendo en puerto 3306
 
-## Base de datos
-
-Levantar MySQL con Docker:
-```bash
-docker compose up -d
-```
+> Con Docker no necesitas instalar nada. Usa `docker compose up` desde la raíz del proyecto.
 
 ## Variables de entorno
 
-Copia `.env.example` y ajusta los valores:
+Copia `.env.example` en la raíz del proyecto y ajusta los valores:
+
+| Variable | Descripción | Default dev |
+| :--- | :--- | :--- |
+| `DB_URL` | URL JDBC de conexión a MySQL | `jdbc:mysql://127.0.0.1:3306/turatrip_db...` |
+| `DB_USERNAME` | Usuario de la base de datos | `root` |
+| `DB_PASSWORD` | Contraseña de la base de datos | `root` |
+| `JWT_SECRET` | Secreto para firmar tokens JWT (mín. 32 chars) | `9780fbdc24f409a10c25bd5120ed1d484b47d5a4c78c73a834d2fcb50d293362` |
+| `JWT_EXPIRATION_MS` | Duración del token en milisegundos | `86400000` (24h) |
+
+## Ejecutar sin Docker
+Abre una terminal en el proyecto y ejecuta:
 
 ```bash
-cp .env.example .env
+cd backend
+./mvnw spring-boot:run
 ```
 
-| Variable | Descripción | Default |
-|---|---|---|
-| `DB_URL` | URL de conexión JDBC a MySQL | `jdbc:mysql://127.0.0.1:3306/turatrip_db...` |
-| `DB_USERNAME` | Usuario de la BD | `root` |
-| `DB_PASSWORD` | Contraseña de la BD | `root` |
-| `JWT_SECRET` | Secreto para firmar JWT (mín. 32 chars) | ⚠️ cambiar |
-| `JWT_EXPIRATION_MS` | Duración del token en ms | `86400000` (24h) |
-| `PORT` | Puerto del servidor | `8080` |
-
-## Inicialización de datos
-
-Al arrancar, el sistema crea automáticamente los roles `USUARIO`, `OPERARIO` y `ADMIN` si no existen (via `DataInitializer`).
-
-## Ejecutar
+o abrela terminal directamente en la carpeta backend del proyecto y ejecuta:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-## Endpoints disponibles
+## Inicialización de datos
 
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/registro` | ❌ | Registro de usuario |
+Al arrancar, el sistema crea automáticamente los roles `USUARIO` y `ADMIN`
+si no existen en la base de datos (via `DataInitializer`).
 
 ## Cambios en base de datos
 
-- Tablas gestionadas por Hibernate (`ddl-auto=update`)
-- Constraint `UNIQUE` en `roles.nombre`
-- Roles iniciales insertados por `DataInitializer`
+| Versión | Cambio |
+| :--- | :--- |
+| SUG-1 | Tablas `usuarios`, `roles`, `usuario_roles`|
+
+## Endpoints disponibles
+
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/registro` | ❌ Público | Registro de usuario con rol USUARIO |

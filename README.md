@@ -12,3 +12,33 @@ Plataforma tecnológica diseñada para registrar y compartir información turís
 Para dar seguimiento a nuestras tareas, historias de usuario y sprints, utilizamos **Jira**:
 
 [Espacio de trabajo en Jira](https://sugerenciasgps.atlassian.net/jira/software/projects/SUG/boards/1/backlog?atlOrigin=eyJpIjoiN2QxNGY0NzU1M2I5NGU1Yzk3ZDVlMTllZjI3ODRiYWEiLCJwIjoiaiJ9&cloudId=7d5b4f9c-d5a7-47d8-8507-f923ba17f958)
+
+## 🛠️ Stack Tecnológico
+
+| Capa | Tecnología |
+| :--- | :--- |
+| Frontend | Next.js 16 + TypeScript + Tailwind CSS |
+| Backend | Spring Boot 3 + Java 21 |
+| Base de datos | MySQL 9.7 |
+| Contenedores | Docker + Docker Compose |
+
+## ⚡ Inicio Rápido
+
+> Requisito único: tener **Docker Desktop** instalado.
+
+```bash
+git clone https://github.com/SHF0987654321/TuraTrip.git
+cd TuraTrip
+cp .env.example .env
+docker compose up -d --build
+```
+
+| Servicio | URL |
+| :--- | :--- |
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+
+Para más detalles de cada servicio:
+- [Documentación del Backend](./backend/README.md)
+- [Documentación del Frontend](./frontend/README.md)
