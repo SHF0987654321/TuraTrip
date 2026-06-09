@@ -21,7 +21,7 @@ public class UsuarioMapper {
             usuario.getId(),
             usuario.getNombre(),
             usuario.getCorreo(),
-            usuario.getVerificado(),
+            usuario.getHabilitado(),
             roles,
             usuario.getCreado()
         );
