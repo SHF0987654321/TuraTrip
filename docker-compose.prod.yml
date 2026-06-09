@@ -39,6 +39,11 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
       JPA_DDL_AUTO: validate
       PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
     networks:
       - turatrip-net
 
