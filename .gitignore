@@ -1,0 +1,19 @@
+# Entorno
+.env
+.env.local
+*.env
+
+# Backend
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/.idea/
+
+# Frontend
+frontend/turismo-app/.next/
+frontend/turismo-app/node_modules/
+frontend/turismo-app/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
