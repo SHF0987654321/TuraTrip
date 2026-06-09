@@ -25,6 +25,13 @@ public class GlobalExceptionHandler {
             .body(Map.of("error", ex.getMessage()));
     }
 
+    // Captura los errores de tokens expirados o tokens ya usados
+    @ExceptionHandler({TokenVerificacionException.class, TokenExpiradoException.class})
+    public ResponseEntity<Map<String, String>> handleErroresToken(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidacion(MethodArgumentNotValidException ex) {
         Map<String, String> errores = ex.getBindingResult().getFieldErrors().stream()

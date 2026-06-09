@@ -1,26 +1,29 @@
 package com.TuraTrip.backend.services;
 
+import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
 import com.TuraTrip.backend.dtos.request.RegistroRequest;
 import com.TuraTrip.backend.dtos.response.UsuarioResponse;
 import com.TuraTrip.backend.exceptions.CorreoYaRegistradoException;
 import com.TuraTrip.backend.exceptions.ResourceNotFoundException;
+import com.TuraTrip.backend.exceptions.TokenExpiradoException;
+import com.TuraTrip.backend.exceptions.TokenVerificacionException;
 import com.TuraTrip.backend.mappers.UsuarioMapper;
 import com.TuraTrip.backend.models.Rol;
-import com.TuraTrip.backend.models.TokenVerificacion;
+import com.TuraTrip.backend.models.TipoToken;
+import com.TuraTrip.backend.models.Token;
 import com.TuraTrip.backend.models.Usuario;
 import com.TuraTrip.backend.repositories.RolRepository;
-import com.TuraTrip.backend.repositories.TokenVerificacionRepository;
+import com.TuraTrip.backend.repositories.TokenRepository;
 import com.TuraTrip.backend.repositories.UsuarioRepository;
-import java.util.UUID;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
     private final EmailService emailService;
-    private final TokenVerificacionRepository tokenRepository;
+    private final TokenRepository tokenRepository;
 
     @Override
     @Transactional
@@ -41,7 +44,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         Rol rolUsuario = rolRepository.findByNombre("USUARIO")
-            .orElseThrow(() -> new ResourceNotFoundException("auth.registro.rol_not_found"));
+            .orElseThrow(() -> new ResourceNotFoundException("El rol USUARIO  no está configurado en el sistema. Contacta al administrador."));
 
         Usuario usuario = Usuario.builder()
             .nombre(request.nombre())
@@ -53,10 +56,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
         String tokenStr = UUID.randomUUID().toString();
-        TokenVerificacion tokenVerificacion = TokenVerificacion.builder()
+        Token tokenVerificacion = Token.builder()
             .token(tokenStr)
             .usuario(usuarioGuardado)
-            .fechaExpiracion(LocalDateTime.now().plusHours(24))
+            .tipo(TipoToken.VERIFICACION) // <-- Configurado explícitamente
+            .fechaExpiracion(LocalDateTime.now().plusHours(24)) // 24 horas para activarse
+            .usado(false)
             .build();
         
         tokenRepository.save(tokenVerificacion);
@@ -68,28 +73,64 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public void confirmarToken(String token) {
-        // 1. ¿Existe el token?
-        TokenVerificacion tokenVerificacion = tokenRepository.findByToken(token)
-            .orElseThrow(() -> new ResourceNotFoundException("El enlace de verificación no es válido."));
+    public void confirmarToken(String tokenStr) {
+        Token tokenVerificacion = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.VERIFICACION)
+            .orElseThrow(() -> new ResourceNotFoundException("El enlace de verificación no es válido o no existe."));
 
-        // 2. ¿Ya fue utilizado?
-        if (tokenVerificacion.getConfirmadoEn() != null) {
-            throw new IllegalStateException("Este correo ya ha sido verificado anteriormente.");
+        if (tokenVerificacion.isUsado()) {
+            throw new TokenVerificacionException("Este correo ya ha sido verificado anteriormente.");
         }
 
-        // 3. ¿Ya expiró?
-        if (tokenVerificacion.getFechaExpiracion().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("El enlace de verificación ha expirado.");
+        if (tokenVerificacion.estaExpirado()) {
+            throw new TokenExpiradoException("El enlace de verificación ha expirado.");
         }
 
-        // 4. Si todo es correcto, marcamos el token como usado
-        tokenVerificacion.setConfirmadoEn(LocalDateTime.now());
+        tokenVerificacion.setUsado(true);
         tokenRepository.save(tokenVerificacion);
 
-        // 5. Aquí activamos al usuario
         Usuario usuario = tokenVerificacion.getUsuario();
         usuario.setHabilitado(true);
         usuarioRepository.save(usuario);
     }
+    
+    @Override
+    @Transactional
+    public void solicitarRecuperacionClave(String correo) {
+
+        usuarioRepository.findByCorreo(correo).ifPresent(usuario -> {
+            String tokenStr = UUID.randomUUID().toString();
+            Token tokenRecuperacion = Token.builder()
+                .token(tokenStr)
+                .usuario(usuario)
+                .tipo(TipoToken.RECUPERACION)
+                .fechaExpiracion(LocalDateTime.now().plusMinutes(15))
+                .usado(false)
+                .build();
+    
+            tokenRepository.save(tokenRecuperacion);
+            emailService.enviarCorreoRecuperacion(usuario.getCorreo(), usuario.getNombre(), tokenStr);
+        });
+    }
+    @Override
+    @Transactional
+    public void cambiarClaveConToken(String tokenStr, String nuevaClave) {
+        Token tokenRecuperacion = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.RECUPERACION)
+            .orElseThrow(() -> new ResourceNotFoundException("El enlace de recuperación no es válido o no existe."));
+
+        if (tokenRecuperacion.isUsado()) {
+            throw new TokenVerificacionException("Este enlace ya fue utilizado.");
+        }
+
+        if (tokenRecuperacion.estaExpirado()) {
+            throw new TokenExpiradoException("El enlace de recuperación ha expirado. Solicita uno nuevo.");
+        }
+
+        Usuario usuario = tokenRecuperacion.getUsuario();
+        usuario.setClave(passwordEncoder.encode(nuevaClave));
+        usuarioRepository.save(usuario);
+
+        tokenRecuperacion.setUsado(true);
+        tokenRepository.save(tokenRecuperacion);
+    }
+
 }

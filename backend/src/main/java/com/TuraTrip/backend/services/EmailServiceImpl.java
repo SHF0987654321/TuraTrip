@@ -41,8 +41,26 @@ public class EmailServiceImpl implements EmailService {
 
     @Async
     @Override
-    public void enviarCorreoCambioClaveAdmin(String destino, String nombre, String claveTemporal) {
+    public void enviarCorreoRecuperacion(String destino, String nombre, String tokenRecuperacion) {
 
+        String enlace = frontendUrl + "/restablecer-clave?token=" + tokenRecuperacion;
+        
+        String html = String.format("""
+            <div style='font-family: sans-serif; max-width: 600px; margin: auto;'>
+                <h2 style='color: hsl(174, 72%%, 40%%);'>Restablecer Contraseña - TuraTrip</h2>
+                <p>Hola, %s. Has solicitado restablecer tus credenciales de acceso.</p>
+                <p>Este enlace es de un solo uso y vencerá en 15 minutos. Haz clic abajo para proceder:</p>
+                <a href='%s' style='background-color: hsl(174, 72%%, 40%%); color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block;'>Restablecer Contraseña</a>
+                <p style='color: #7f8c8d; font-size: 12px; margin-top: 20px;'>Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+            </div>
+            """, nombre, enlace);
+
+        enviarHtml(destino, "Restablece tu contraseña - TuraTrip", html);
+    }
+
+    @Async
+    @Override
+    public void enviarCorreoCambioClaveAdmin(String destino, String nombre, String claveTemporal) {
         String enlace = frontendUrl + "/login";
         
         String html = String.format("""
