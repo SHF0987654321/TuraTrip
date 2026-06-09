@@ -6,4 +6,5 @@ import com.TuraTrip.backend.dtos.request.RegistroRequest;
 
 public interface UsuarioService {
     UsuarioResponse registrar(RegistroRequest request);
+    void confirmarToken(String token);
 }
