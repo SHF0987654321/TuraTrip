@@ -9,6 +9,7 @@ import { z } from "zod";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import axios from "axios";
 
 // ── Schema de validación ──────────────────────────────────────────────
 const schema = z
@@ -57,26 +58,21 @@ export default function RegistroPage() {
         correo: data.correo,
         clave: data.clave,
       });
-
-      // Si el backend devuelve token en el registro, lo guardamos
-      if (res.data.token) {
+  
+      if (res.data?.token) {
         setAuth(res.data.token, res.data.usuario);
         router.push("/feed");
       } else {
         router.push("/login?registered=true");
       }
     } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === "object" &&
-        "response" in err
-      ) {
-        const axiosErr = err as { response?: { status?: number; data?: { error?: string } } };
-        if (axiosErr.response?.status === 409) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
           setServerError("Este correo ya está registrado. ¿Quieres iniciar sesión?");
         } else {
+          const errorData = err.response?.data as { error?: string } | undefined;
           setServerError(
-            axiosErr.response?.data?.error ?? "Error al crear la cuenta. Intenta de nuevo."
+            errorData?.error ?? "Error al crear la cuenta. Intenta de nuevo."
           );
         }
       } else {
@@ -121,8 +117,8 @@ export default function RegistroPage() {
         </div>
       )}
 
-      {/* Formulario */}
-      <div className="flex flex-col gap-4">
+      {/* Formulario Semántico */}
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         {/* Nombre */}
         <Field label="Nombre completo" error={errors.nombre?.message}>
           <input
@@ -187,9 +183,9 @@ export default function RegistroPage() {
           </div>
         </Field>
 
-        {/* Submit */}
+        {/* Botón de Submit */}
         <button
-          onClick={handleSubmit(onSubmit)}
+          type="submit"
           disabled={isSubmitting}
           className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-[hsl(174_72%_40%)] px-6 py-3.5 text-white font-semibold text-sm hover:bg-[hsl(174_72%_35%)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           style={{ fontFamily: "Syne, sans-serif" }}
@@ -203,7 +199,7 @@ export default function RegistroPage() {
             "Crear cuenta"
           )}
         </button>
-      </div>
+      </form>
 
       {/* Footer */}
       <p className="text-center text-sm text-[hsl(210_10%_52%)]">
