@@ -41,7 +41,7 @@ function LoginFormContent() {
         correo: data.correo,
         clave: data.clave,
       });
-
+// Se tiene que redirigir al usuario a la siguiente página, por el momento se está redirigiendo a la raíz, pero se tiene que redirigir al perfil del usuario.
       setAuth(res.data.token, res.data.usuario);
       router.push("/");
     } catch (err: unknown) {

@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import com.TuraTrip.backend.dtos.response.RolResponse;
 import com.TuraTrip.backend.dtos.response.UsuarioResponse;
-
 import com.TuraTrip.backend.models.Usuario;
 
 @Component
@@ -22,6 +21,7 @@ public class UsuarioMapper {
             usuario.getId(),
             usuario.getNombre(),
             usuario.getCorreo(),
+            usuario.getHabilitado(),
             roles,
             usuario.getCreado()
         );

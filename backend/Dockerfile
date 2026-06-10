@@ -1,15 +1,23 @@
-# Etapa 1 — build (aquí va Maven, no en la máquina del dev)
+# Etapa 1 — build
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 COPY pom.xml .
-# Descarga dependencias primero (cache de Docker)
 RUN mvn dependency:go-offline -q
 COPY src ./src
 RUN mvn package -DskipTests -q
 
-# Etapa 2 — runtime (imagen mínima, sin Maven ni JDK)
+# Etapa 2 — runtime (imagen mínima)
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+
+# SEGURIDAD: Crear grupo y usuario de sistema sin permisos de login ni home seguro
+RUN addgroup -S spring && adduser -S spring -G spring
+
+# SEGURIDAD: Copiar el artefacto asignando la propiedad al nuevo usuario
+COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
+
+# SEGURIDAD: Switch al usuario aislado antes de la ejecución del proceso
+USER spring
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

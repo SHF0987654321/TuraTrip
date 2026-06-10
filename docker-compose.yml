@@ -1,51 +1,72 @@
+version: '3.8'
+
 services:
   db:
-    image: mysql:8.0
-    container_name: turatrip-db
+    image: mysql:9.7
+    container_name: turatrip-db-dev
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: turatrip_db
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3306:3306" # Expuesto al host local para desarrollo fácil
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data_dev:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - turatrip-net-dev
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: turatrip-backend
+    container_name: turatrip-backend-dev
     restart: always
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "8080:8080" # Expuesto para que puedas probar endpoints localmente
     environment:
       DB_URL: jdbc:mysql://db:3306/turatrip_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      DB_USERNAME: root
+      DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
-    ports:
-      - "8080:8080"
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO} # Usa 'update' en dev
+      PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    networks:
+      - turatrip-net-dev
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: turatrip-frontend
+      args:
+        - NEXT_PUBLIC_API_URL=${API_URL}
+    container_name: turatrip-frontend-dev
     restart: always
     depends_on:
       - backend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
     ports:
-      - "3000:3000"
+      - "3000:3000" # Expuesto para acceder a la app web en localhost:3000
+    networks:
+      - turatrip-net-dev
 
 volumes:
-  mysql_data:
+  mysql_data_dev:
+
+networks:
+  turatrip-net-dev:
+    driver: bridge
