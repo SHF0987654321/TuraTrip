@@ -30,19 +30,19 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
             
-            # Usamos cat <<EOF para crear el archivo .env de forma segura
+            # Usamos 'EOF' (con comillas simples) para desactivar toda interpretación de variables
             cat <<EOF > .env
-            DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
-            API_URL=${{ secrets.API_URL }}
-            FRONTEND_URL=https://turatrip.seminario1.eleueleo.com
-            SMTP_HOST=${{ secrets.SMTP_HOST }}
-            SMTP_PORT=${{ secrets.SMTP_PORT }}
-            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
-            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
+            DB_USERNAME="${{ secrets.DB_USERNAME }}"
+            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            JWT_EXPIRATION_MS="${{ secrets.JWT_EXPIRATION_MS }}"
+            API_URL="${{ secrets.API_URL }}"
+            FRONTEND_URL="https://turatrip.seminario1.eleueleo.com"
+            SMTP_HOST="${{ secrets.SMTP_HOST }}"
+            SMTP_PORT="${{ secrets.SMTP_PORT }}"
+            SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
+            SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
             EOF
             
             chmod 600 .env
