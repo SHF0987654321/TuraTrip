@@ -2,7 +2,9 @@ package com.TuraTrip.backend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.TuraTrip.backend.dtos.request.LoginRequest;
 import com.TuraTrip.backend.dtos.request.RegistroRequest;
+import com.TuraTrip.backend.dtos.response.AuthResponse;
 import com.TuraTrip.backend.dtos.response.MensajeResponse;
 import com.TuraTrip.backend.dtos.response.UsuarioResponse;
 import com.TuraTrip.backend.services.UsuarioService;
@@ -22,6 +24,11 @@ public class AuthController {
     @PostMapping("/registro")
     public ResponseEntity<UsuarioResponse> registrar(@Valid @RequestBody RegistroRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.registrar(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(usuarioService.login(request));
     }
 
     @GetMapping("/verificar")

@@ -4,24 +4,22 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.TuraTrip.backend.configs.JwtUtils;
+import com.TuraTrip.backend.dtos.request.LoginRequest;
 import com.TuraTrip.backend.dtos.request.RegistroRequest;
+import com.TuraTrip.backend.dtos.response.AuthResponse;
 import com.TuraTrip.backend.dtos.response.UsuarioResponse;
-import com.TuraTrip.backend.exceptions.CorreoYaRegistradoException;
-import com.TuraTrip.backend.exceptions.ResourceNotFoundException;
-import com.TuraTrip.backend.exceptions.TokenExpiradoException;
-import com.TuraTrip.backend.exceptions.TokenVerificacionException;
+import com.TuraTrip.backend.exceptions.*;
 import com.TuraTrip.backend.mappers.UsuarioMapper;
-import com.TuraTrip.backend.models.Rol;
-import com.TuraTrip.backend.models.TipoToken;
-import com.TuraTrip.backend.models.Token;
-import com.TuraTrip.backend.models.Usuario;
-import com.TuraTrip.backend.repositories.RolRepository;
-import com.TuraTrip.backend.repositories.TokenRepository;
-import com.TuraTrip.backend.repositories.UsuarioRepository;
+import com.TuraTrip.backend.models.*;
+import com.TuraTrip.backend.repositories.*;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,20 +29,22 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
+    private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
     private final EmailService emailService;
-    private final TokenRepository tokenRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
 
     @Override
     @Transactional
     public UsuarioResponse registrar(RegistroRequest request) {
-       if (usuarioRepository.existsByCorreo(request.correo())) {
+        if (usuarioRepository.existsByCorreo(request.correo())) {
             throw new CorreoYaRegistradoException(request.correo());
         }
 
         Rol rolUsuario = rolRepository.findByNombre("USUARIO")
-            .orElseThrow(() -> new ResourceNotFoundException("El rol USUARIO  no está configurado en el sistema. Contacta al administrador."));
+            .orElseThrow(() -> new ResourceNotFoundException("El rol USUARIO no está configurado."));
 
         Usuario usuario = Usuario.builder()
             .nombre(request.nombre())
@@ -53,37 +53,47 @@ public class UsuarioServiceImpl implements UsuarioService {
             .roles(Set.of(rolUsuario))
             .habilitado(false)
             .build();
+        
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
+        // Lógica de token de verificación
         String tokenStr = UUID.randomUUID().toString();
         Token tokenVerificacion = Token.builder()
             .token(tokenStr)
             .usuario(usuarioGuardado)
-            .tipo(TipoToken.VERIFICACION) // <-- Configurado explícitamente
-            .fechaExpiracion(LocalDateTime.now().plusHours(24)) // 24 horas para activarse
+            .tipo(TipoToken.VERIFICACION)
+            .fechaExpiracion(LocalDateTime.now().plusHours(24))
             .usado(false)
             .build();
         
         tokenRepository.save(tokenVerificacion);
-
         emailService.enviarCorreoVerificacion(usuarioGuardado.getCorreo(), usuarioGuardado.getNombre(), tokenStr);
 
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.correo(), request.clave())
+        );
+
+        Usuario usuario = usuarioRepository.findByCorreo(request.correo())
+            .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+
+        String token = jwtUtils.generateToken(usuario);
+        return new AuthResponse(token, usuarioMapper.toResponse(usuario));
+    }
+
+    @Override
     @Transactional
     public void confirmarToken(String tokenStr) {
         Token tokenVerificacion = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.VERIFICACION)
-            .orElseThrow(() -> new ResourceNotFoundException("El enlace de verificación no es válido o no existe."));
+            .orElseThrow(() -> new ResourceNotFoundException("Enlace no válido."));
 
-        if (tokenVerificacion.isUsado()) {
-            throw new TokenVerificacionException("Este correo ya ha sido verificado anteriormente.");
-        }
-
-        if (tokenVerificacion.estaExpirado()) {
-            throw new TokenExpiradoException("El enlace de verificación ha expirado.");
-        }
+        if (tokenVerificacion.isUsado()) throw new TokenVerificacionException("Ya verificado.");
+        if (tokenVerificacion.estaExpirado()) throw new TokenExpiradoException("Enlace expirado.");
 
         tokenVerificacion.setUsado(true);
         tokenRepository.save(tokenVerificacion);
@@ -92,11 +102,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setHabilitado(true);
         usuarioRepository.save(usuario);
     }
-    
+
     @Override
     @Transactional
     public void solicitarRecuperacionClave(String correo) {
-
         usuarioRepository.findByCorreo(correo).ifPresent(usuario -> {
             String tokenStr = UUID.randomUUID().toString();
             Token tokenRecuperacion = Token.builder()
@@ -111,26 +120,21 @@ public class UsuarioServiceImpl implements UsuarioService {
             emailService.enviarCorreoRecuperacion(usuario.getCorreo(), usuario.getNombre(), tokenStr);
         });
     }
+
     @Override
     @Transactional
     public void cambiarClaveConToken(String tokenStr, String nuevaClave) {
-        Token tokenRecuperacion = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.RECUPERACION)
-            .orElseThrow(() -> new ResourceNotFoundException("El enlace de recuperación no es válido o no existe."));
+        Token tokenRec = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.RECUPERACION)
+            .orElseThrow(() -> new ResourceNotFoundException("Enlace no válido."));
 
-        if (tokenRecuperacion.isUsado()) {
-            throw new TokenVerificacionException("Este enlace ya fue utilizado.");
-        }
+        if (tokenRec.isUsado()) throw new TokenVerificacionException("Enlace ya utilizado.");
+        if (tokenRec.estaExpirado()) throw new TokenExpiradoException("Enlace expirado.");
 
-        if (tokenRecuperacion.estaExpirado()) {
-            throw new TokenExpiradoException("El enlace de recuperación ha expirado. Solicita uno nuevo.");
-        }
-
-        Usuario usuario = tokenRecuperacion.getUsuario();
+        Usuario usuario = tokenRec.getUsuario();
         usuario.setClave(passwordEncoder.encode(nuevaClave));
         usuarioRepository.save(usuario);
 
-        tokenRecuperacion.setUsado(true);
-        tokenRepository.save(tokenRecuperacion);
+        tokenRec.setUsado(true);
+        tokenRepository.save(tokenRec);
     }
-
 }
