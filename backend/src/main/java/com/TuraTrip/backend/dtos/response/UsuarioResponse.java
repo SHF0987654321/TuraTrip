@@ -7,6 +7,7 @@ public record UsuarioResponse(
     Integer id,
     String nombre,
     String correo,
+    Boolean habilitado,
     Set<RolResponse> roles,
     LocalDateTime creado
 ) {}

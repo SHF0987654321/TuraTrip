@@ -42,6 +42,10 @@ public class Usuario {
     private String clave;
 
     @Builder.Default
+    @Column(nullable = false)
+    private Boolean habilitado = false;
+
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "usuario_roles",

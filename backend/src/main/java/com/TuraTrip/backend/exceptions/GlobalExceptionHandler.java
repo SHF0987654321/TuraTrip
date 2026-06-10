@@ -27,6 +27,18 @@ public class GlobalExceptionHandler {
             .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler({TokenVerificacionException.class, TokenExpiradoException.class})
+    public ResponseEntity<Map<String, String>> handleErroresToken(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    public ResponseEntity<Map<String, String>> handleAutenticacion(Exception ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(Map.of("error", "Credenciales incorrectas"));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidacion(MethodArgumentNotValidException ex) {
         Map<String, String> errores = ex.getBindingResult().getFieldErrors().stream()
@@ -35,12 +47,6 @@ public class GlobalExceptionHandler {
                 fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Campo inválido"
             ));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errores);
-    }
-
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
-    public ResponseEntity<Map<String, String>> handleAutenticacion(Exception ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(Map.of("error", "Credenciales incorrectas"));
     }
 
     @ExceptionHandler(Exception.class)
