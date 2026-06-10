@@ -30,20 +30,24 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
             
-            echo "DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" > .env
-            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}" >> .env
-            echo "API_URL=${{ secrets.API_URL }}" >> .env
-            echo "FRONTEND_URL=https://turatrip.seminario1.eleueleo.com" >> .env
-            
-            echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
-            echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
-            echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}" >> .env
-            echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> .env
+            # Usamos cat <<EOF para crear el archivo .env de forma segura
+            cat <<EOF > .env
+            DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
+            API_URL=${{ secrets.API_URL }}
+            FRONTEND_URL=https://turatrip.seminario1.eleueleo.com
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            EOF
             
             chmod 600 .env
+            # Asegurar permisos correctos para el usuario de despliegue
+            sudo chown turatrip:turatrip .env
             
             docker compose -f docker-compose.prod.yml down
             docker compose -f docker-compose.prod.yml up -d --build
