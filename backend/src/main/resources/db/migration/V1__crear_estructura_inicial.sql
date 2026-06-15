@@ -13,6 +13,7 @@ CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     correo VARCHAR(255) NOT NULL,
+    foto_perfil VARCHAR(500),
     clave VARCHAR(255) NOT NULL,
     habilitado BIT(1) NOT NULL DEFAULT b'0',
     creado DATETIME(6) NOT NULL,
