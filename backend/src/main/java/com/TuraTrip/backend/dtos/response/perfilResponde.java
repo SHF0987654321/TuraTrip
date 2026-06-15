@@ -3,7 +3,7 @@ package com.TuraTrip.backend.dtos.response;
 import java.util.List;
  
 public record PerfilResponse(
-    Long id,
+    private int id,
     String nombre,
     String correo,
     String fotoPerfil,
