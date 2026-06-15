@@ -38,6 +38,9 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 255)
     private String correo;
 
+    @Column(length = 500)
+    private String fotoPerfil;
+
     @Column(nullable = false, length = 255)
     private String clave;
 
