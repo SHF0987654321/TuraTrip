@@ -1,4 +1,3 @@
-PerfilController · JAVA
 package com.TuraTrip.backend.controllers;
  
 import com.TuraTrip.backend.dtos.request.EditarPerfilRequest;
