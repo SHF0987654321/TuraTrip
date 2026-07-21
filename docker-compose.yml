@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:9.7
     container_name: turatrip-db-dev
-    restart: always
+    restart: on-failure # Cambiado de 'always' a 'on-failure' (mejor para dev)
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: turatrip_db
@@ -27,12 +25,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: turatrip-backend-dev
-    restart: always
+    restart: "no" # En desarrollo prefieres controlar el reinicio manualmente
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8080:8080" # Expuesto para que puedas probar endpoints localmente
+    volumes:
+      - ./uploads_data:/app/uploads  # Mapea carpeta local a /app/uploads
     environment:
       DB_URL: jdbc:mysql://db:3306/turatrip_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       DB_USERNAME: ${DB_USERNAME}
@@ -46,6 +46,8 @@ services:
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USERNAME: ${SMTP_USERNAME}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
+      UPLOADS_DIR: ${UPLOADS_DIR}
+      API_URL: ${API_URL}
     networks:
       - turatrip-net-dev
 
@@ -56,7 +58,7 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=${API_URL}
     container_name: turatrip-frontend-dev
-    restart: always
+    restart: "no"
     depends_on:
       - backend
     ports:

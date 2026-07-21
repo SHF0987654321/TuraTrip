@@ -3,15 +3,20 @@ package com.TuraTrip.backend.exceptions;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.AuthenticationException; 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,13 +32,19 @@ public class GlobalExceptionHandler {
             .body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler({TokenVerificacionException.class, TokenExpiradoException.class})
-    public ResponseEntity<Map<String, String>> handleErroresToken(RuntimeException ex) {
+    @ExceptionHandler({TokenVerificadoException.class})
+    public ResponseEntity<Map<String, String>> handleTokenVerificacion(TokenVerificadoException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    @ExceptionHandler(TokenExpiradoException.class)
+    public ResponseEntity<Map<String, String>> handleTokenExpirado(TokenExpiradoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", ex.getMessage(), "correo", ex.getcorreo()));
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class, AuthenticationException.class})
     public ResponseEntity<Map<String, String>> handleAutenticacion(Exception ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(Map.of("error", "Credenciales incorrectas"));
@@ -49,9 +60,70 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errores);
     }
 
+    @ExceptionHandler(CuentaInhabilitadaException.class)
+    public ResponseEntity<Map<String, String>> handleCuentaInhabilitada(CuentaInhabilitadaException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, String>> handleDisabled(org.springframework.security.authentication.DisabledException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", "Tu cuenta no ha sido activada. Por favor, revisa tu correo."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenerico(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(Map.of("error", "Error interno del servidor"));
+    }
+
+    @ExceptionHandler(CuentaYaVerificadaException.class)
+    public ResponseEntity<Map<String, String>> handleCuentaYaVerificada(CuentaYaVerificadaException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccesoNoAutorizadoException.class)
+    public ResponseEntity<Map<String, String>> handleAccesoDenegado(AccesoNoAutorizadoException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ArchivoInvalidoException.class)
+    public ResponseEntity<Map<String, String>> handleArchivoInvalido(ArchivoInvalidoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ArchivoDemasiadoGrandeException.class)
+    public ResponseEntity<Map<String, String>> handleArchivoGrande(ArchivoDemasiadoGrandeException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(FormatoNoSoportadoException.class)
+    public ResponseEntity<Map<String, String>> handleFormatoNoSoportado(FormatoNoSoportadoException ex) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ErrorAlmacenamientoException.class)
+    public ResponseEntity<Map<String, String>> handleErrorAlmacenamiento(ErrorAlmacenamientoException ex) {
+        // Nota: Es buena práctica no exponer el ex.getMessage() real si contiene rutas del servidor (seguridad)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", "Hubo un problema al procesar el archivo en el servidor: " + ex.getMessage()));
+    }
+
+    @ExceptionHandler(PublicacionNoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handlePublicacionNoEncontrada(PublicacionNoEncontradaException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(Map.of("error", ex.getMessage()));
     }
 }

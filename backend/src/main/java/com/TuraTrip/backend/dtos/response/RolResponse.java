@@ -1,7 +1,7 @@
 package com.TuraTrip.backend.dtos.response;
 
 public record RolResponse(
-    Integer id,
+    Long id,
     String nombre,
     String descripcion
 ) {}

@@ -6,6 +6,7 @@ import com.TuraTrip.backend.services.PerfilService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +24,9 @@ public class PerfilController {
      */
     @GetMapping("/perfil")
     public ResponseEntity<PerfilResponse> obtenerPerfil(
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Authentication authentication) {
  
-        PerfilResponse perfil = perfilService.obtenerPerfil(userDetails.getUsername());
+        PerfilResponse perfil = perfilService.obtenerPerfil(authentication.getName());
         return ResponseEntity.ok(perfil);
     }
  
@@ -35,11 +36,11 @@ public class PerfilController {
      */
     @PutMapping("/perfil")
     public ResponseEntity<PerfilResponse> editarPerfil(
-            @AuthenticationPrincipal UserDetails userDetails,
+            Authentication authentication,
             @Valid @RequestBody EditarPerfilRequest request) {
  
         PerfilResponse actualizado = perfilService.editarPerfil(
-            userDetails.getUsername(), request);
+            authentication.getName(), request);
         return ResponseEntity.ok(actualizado);
     }
 }

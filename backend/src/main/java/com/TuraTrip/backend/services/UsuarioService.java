@@ -16,4 +16,6 @@ public interface UsuarioService {
     void solicitarRecuperacionClave(String correo);
 
     void cambiarClaveConToken(String token, String nuevaClave);
+
+    void generarNuevoTokenVerificacion(String correo);
 }

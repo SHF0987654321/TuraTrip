@@ -56,6 +56,7 @@ public class DataInitializer implements ApplicationRunner {
                 .correo(correoAdmin)
                 .clave(passwordEncoder.encode(claveTemporal))
                 .roles(Set.of(rolAdmin))
+                .habilitado(true)
                 .build();
 
             usuarioRepository.save(adminInicial);

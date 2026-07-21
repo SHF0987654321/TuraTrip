@@ -8,16 +8,22 @@ RUN mvn package -DskipTests -q
 
 # Etapa 2 — runtime (imagen mínima)
 FROM eclipse-temurin:21-jre-alpine
+
+# Definir directorio de trabajo principal
 WORKDIR /app
 
-# SEGURIDAD: Crear grupo y usuario de sistema sin permisos de login ni home seguro
+# Crear usuario y grupo (seguridad)
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# SEGURIDAD: Copiar el artefacto asignando la propiedad al nuevo usuario
+# Copiar tus archivos
 COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
+COPY entrypoint.sh .
 
-# SEGURIDAD: Switch al usuario aislado antes de la ejecución del proceso
-USER spring
+# Permisos y configuración final
+RUN chmod +x entrypoint.sh && chown spring:spring entrypoint.sh
 
+# Exponer puerto
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Punto de entrada
+ENTRYPOINT ["./entrypoint.sh"]

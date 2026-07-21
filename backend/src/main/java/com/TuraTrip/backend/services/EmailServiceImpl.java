@@ -69,7 +69,7 @@ public class EmailServiceImpl implements EmailService {
                 <p>Hola %s, se ha generado tu cuenta de Administrador del sistema.</p>
                 <p>Tu contraseña temporal de acceso es: <strong style='font-size: 16px; color: #e74c3c;'>%s</strong></p>
                 <p>Por seguridad, debes iniciar sesión e ir a tu panel para cambiar esta clave inmediatamente.</p>
-                <a href='%s' style='background-color: #2c3e50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block;'>Ir al Login</a>
+                <a href='%s' style='background-color: #2c3e50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block;'>Ir al Inicio de Sesión</a>
             </div>
             """, nombre, claveTemporal, enlace);
 

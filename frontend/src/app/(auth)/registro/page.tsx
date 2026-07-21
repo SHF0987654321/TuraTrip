@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import api from "@/lib/api";
-import { useAuthStore } from "@/store/authStore";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
 
@@ -38,7 +37,6 @@ type FormData = z.infer<typeof schema>;
 // ── Componente ────────────────────────────────────────────────────────
 export default function RegistroPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -47,43 +45,39 @@ export default function RegistroPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     try {
-      const res = await api.post("/api/v1/auth/registro", {
+      await api.post("/api/v1/auth/registro", {
         nombre: data.nombre,
         correo: data.correo,
         clave: data.clave,
       });
+
+      reset();
   
-      if (res.data?.token) {
-        setAuth(res.data.token, res.data.usuario);
-        router.push("/feed");
-      } else {
-        router.push("/login?registered=true");
-      }
+      // Redirigimos siempre al login con un mensaje neutral, evitando enumeración
+      router.push("/login?verificar=true");
+      
     } catch (err: unknown) {
+      // Mensaje neutral de seguridad para evitar enumeración de usuarios
+      setServerError("Si los datos son correctos, recibirás un correo electrónico con instrucciones para completar tu registro.");
+      
+      // Log técnico para debugging en consola
       if (axios.isAxiosError(err)) {
-        if (err.response?.status === 409) {
-          setServerError("Este correo ya está registrado. ¿Quieres iniciar sesión?");
-        } else {
-          const errorData = err.response?.data as { error?: string } | undefined;
-          setServerError(
-            errorData?.error ?? "Error al crear la cuenta. Intenta de nuevo."
-          );
-        }
+        console.error("Error técnico del servidor:", err.response?.status, err.response?.data);
       } else {
-        setServerError("Error de conexión. Verifica tu red.");
+        console.error("Error inesperado:", err);
       }
     }
   };
 
   return (
     <div className="w-full max-w-sm flex flex-col gap-6">
-      {/* Header */}
       <div>
         <Link
           href="/"
@@ -102,24 +96,13 @@ export default function RegistroPage() {
         </p>
       </div>
 
-      {/* Error del servidor */}
       {serverError && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-4 py-3">
-          <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>
-          {serverError.includes("ya está registrado") && (
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-[hsl(174_72%_40%)] hover:underline mt-1 inline-block"
-            >
-              Ir a iniciar sesión →
-            </Link>
-          )}
+        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 px-4 py-3">
+          <p className="text-sm text-blue-700 dark:text-blue-400">{serverError}</p>
         </div>
       )}
 
-      {/* Formulario Semántico */}
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        {/* Nombre */}
         <Field label="Nombre completo" error={errors.nombre?.message}>
           <input
             {...register("nombre")}
@@ -130,7 +113,6 @@ export default function RegistroPage() {
           />
         </Field>
 
-        {/* Correo */}
         <Field label="Correo electrónico" error={errors.correo?.message}>
           <input
             {...register("correo")}
@@ -141,7 +123,6 @@ export default function RegistroPage() {
           />
         </Field>
 
-        {/* Contraseña */}
         <Field label="Contraseña" error={errors.clave?.message}>
           <div className="relative">
             <input
@@ -162,7 +143,6 @@ export default function RegistroPage() {
           </div>
         </Field>
 
-        {/* Confirmar contraseña */}
         <Field label="Confirmar contraseña" error={errors.confirmarClave?.message}>
           <div className="relative">
             <input
@@ -183,7 +163,6 @@ export default function RegistroPage() {
           </div>
         </Field>
 
-        {/* Botón de Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -201,7 +180,6 @@ export default function RegistroPage() {
         </button>
       </form>
 
-      {/* Footer */}
       <p className="text-center text-sm text-[hsl(210_10%_52%)]">
         ¿Ya tienes cuenta?{" "}
         <Link

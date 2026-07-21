@@ -10,6 +10,8 @@ export interface Usuario {
   correo: string;
   roles: Rol[];
   creado: string;
+  habilitado: boolean;
+  fotoPerfil?: string;
 }
 
 export interface RegistroRequest {
@@ -27,4 +29,16 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   usuario: Usuario;
+}
+
+export interface Perfil {
+  id: number;
+  nombre: string;
+  correo: string;
+  fotoPerfil: string;
+  roles: string[];
+}
+
+export interface EditarPerfilRequest {
+  nombre: string;
 }
