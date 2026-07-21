@@ -14,6 +14,9 @@ frontend/turismo-app/.next/
 frontend/turismo-app/node_modules/
 frontend/turismo-app/.env.local
 
+# Carpetas de almacenamiento
+uploads_data
+
 # OS
 .DS_Store
 Thumbs.db

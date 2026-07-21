@@ -44,6 +44,13 @@ public class AuthController {
                 new MensajeResponse("Cuenta verificada exitosamente. Ya puedes iniciar sesión."));
     }
 
+    @PostMapping("/reenviar-verificacion")
+    public ResponseEntity<MensajeResponse> reenviarVerificacion(@RequestBody Map<String, String> request) {
+        String correo = request.get("correo");
+        usuarioService.generarNuevoTokenVerificacion(correo);
+        return ResponseEntity.ok(new MensajeResponse("Se ha enviado un nuevo enlace a tu correo."));
+    }
+
     @PostMapping("/restablecer-clave/solicitar")
     public ResponseEntity<MensajeResponse> solicitarRecuperacion(
             @RequestBody Map<String, String> request) {

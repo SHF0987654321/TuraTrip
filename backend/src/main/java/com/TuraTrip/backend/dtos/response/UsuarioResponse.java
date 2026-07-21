@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 public record UsuarioResponse(
-    Integer id,
+    Long id,
     String nombre,
     String correo,
     Boolean habilitado,

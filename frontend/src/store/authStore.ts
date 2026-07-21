@@ -1,17 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-interface Usuario {
-  id: number;
-  nombre: string;
-  correo: string;
-  roles: { id: number; nombre: string }[];
-}
+import { Usuario } from "@/types/usuario";
 
 interface AuthState {
   token: string | null;
   usuario: Usuario | null;
-  setAuth: (token: string, usuario: Usuario) => void;
+  setAuth: (token: string | null, usuario: Usuario | null) => void;
   logout: () => void;
 }
 
@@ -21,7 +15,13 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       usuario: null,
       setAuth: (token, usuario) => set({ token, usuario }),
-      logout: () => set({ token: null, usuario: null }),
+      logout: () => {
+        // Borra la cookie físicamente para que el middleware detecte la salida
+        if (typeof document !== "undefined") {
+          document.cookie = "token=; path=/; max-age=0";
+        }
+        set({ token: null, usuario: null });
+      },
     }),
     { name: "auth-storage" }
   )

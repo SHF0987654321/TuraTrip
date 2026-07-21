@@ -7,6 +7,7 @@ import java.util.Set;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,12 +27,16 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "usuarios")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter 
+@Setter 
+@NoArgsConstructor 
+@AllArgsConstructor 
+@Builder
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false, length = 100)
     private String nombre;
@@ -38,11 +44,11 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 255)
     private String correo;
 
-    @Column(length = 500)
-    private String fotoPerfil;
-
     @Column(nullable = false, length = 255)
     private String clave;
+
+    @Column(name = "foto_perfil", length = 500)
+    private String fotoPerfil;
 
     @Builder.Default
     @Column(nullable = false)
@@ -56,6 +62,11 @@ public class Usuario {
         inverseJoinColumns = @JoinColumn(name = "rol_id")
     )
     private Set<Rol> roles = new HashSet<>();
+
+    // Nueva Relación: Un usuario tiene muchas publicaciones
+    @Builder.Default
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Publicacion> publicaciones = new HashSet<>();
 
     @CreationTimestamp
     @Column(updatable = false)
