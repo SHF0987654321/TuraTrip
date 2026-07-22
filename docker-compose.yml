@@ -32,7 +32,7 @@ services:
     ports:
       - "8080:8080" # Expuesto para que puedas probar endpoints localmente
     volumes:
-      - ./uploads_data:/app/uploads  # Mapea carpeta local a /app/uploads
+      - uploads_data_dev:${UPLOADS_DIR}  # Mapea carpeta local a /app/uploads
     environment:
       DB_URL: jdbc:mysql://db:3306/turatrip_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       DB_USERNAME: ${DB_USERNAME}
@@ -68,6 +68,7 @@ services:
 
 volumes:
   mysql_data_dev:
+  uploads_data_dev:
 
 networks:
   turatrip-net-dev:

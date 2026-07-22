@@ -20,7 +20,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           source: ".,!node_modules,!output,!.git,!.github"
           target: "/var/www/seminario1/turatrip"
-      
+          rm: true # 👈 ESTO ELIMINA los archivos obsoletos/duplicados antes de copiar los nuevos
+
       - name: Ejecutar comandos de Docker en el VPS por SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -29,7 +30,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/seminario1/turatrip
-            
+
             # Usamos 'EOF' (con comillas simples) para desactivar toda interpretación de variables
             cat <<EOF > .env
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
@@ -45,12 +46,22 @@ jobs:
             SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
             UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
             EOF
-            
+
             chmod 600 .env
-            # Despliegue (Docker Rootless)
-            export PATH=$HOME/bin:$PATH
-            export DOCKER_HOST=unix:///home/turatrip/.docker/run/docker.sock
+
+            # Asegurar binarios en el PATH
+            export PATH="$HOME/bin:$PATH"
+
+            # Detección automática del socket Rootless
+            if [ -S "/run/user/$(id -u)/docker.sock" ]; then
+              export DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock"
+            elif [ -S "$HOME/.docker/run/docker.sock" ]; then
+              export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
+            fi
+
+            # Despliegue de la aplicación
             docker compose -f docker-compose.prod.yml down
             docker compose -f docker-compose.prod.yml up -d --build
-            # Limpieza segura (solo imágenes huérfanas)
+
+            # Limpieza de imágenes sin usar
             docker image prune -f
