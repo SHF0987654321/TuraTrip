@@ -60,6 +60,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       UPLOADS_DIR: ${UPLOADS_DIR}
       API_URL: ${API_URL}
+      LOGGING_LEVEL_ROOT: "INFO"
     networks:
       - turatrip-net-prod
 
