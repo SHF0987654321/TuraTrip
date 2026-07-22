@@ -1,6 +1,7 @@
 package com.TuraTrip.backend.mappers;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.mapstruct.Mapper;
@@ -32,7 +33,8 @@ public interface UsuarioMapper {
             return List.of();
         }
         return roles.stream()
-                .map(Rol::getNombre)
+                .filter(Objects::nonNull)
+                .map(rol -> rol.getNombre())
                 .toList();
     }
 }
