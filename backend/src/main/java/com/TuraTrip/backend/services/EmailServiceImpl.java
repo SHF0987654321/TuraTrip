@@ -27,10 +27,10 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void enviarCorreoVerificacion(String destino, String nombre, String tokenVerificacion) {
         String enlace = frontendUrl + "/verificar-cuenta?token=" + tokenVerificacion;
-        
+
         String html = String.format("""
             <div style='font-family: sans-serif; max-width: 600px; margin: auto;'>
-                <h2 style='color: hsl(174, 72%%, 40%%);'>¡Hola, %s!</h2>
+                <h2 style='color: hsl(174, 72%%, 40%%);'>Bienvenido a TuraTrip</h2>
                 <p>Gracias por unirte a TuraTrip. Por favor, confirma tu cuenta haciendo clic en el siguiente enlace:</p>
                 <a href='%s' style='background-color: hsl(174, 72%%, 40%%); color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block;'>Verificar Cuenta</a>
             </div>
@@ -44,7 +44,7 @@ public class EmailServiceImpl implements EmailService {
     public void enviarCorreoRecuperacion(String destino, String nombre, String tokenRecuperacion) {
 
         String enlace = frontendUrl + "/restablecer-clave?token=" + tokenRecuperacion;
-        
+
         String html = String.format("""
             <div style='font-family: sans-serif; max-width: 600px; margin: auto;'>
                 <h2 style='color: hsl(174, 72%%, 40%%);'>Restablecer Contraseña - TuraTrip</h2>
@@ -62,7 +62,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void enviarCorreoCambioClaveAdmin(String destino, String nombre, String claveTemporal) {
         String enlace = frontendUrl + "/login";
-        
+
         String html = String.format("""
             <div style='font-family: sans-serif; max-width: 600px; margin: auto;'>
                 <h2 style='color: #2c3e50;'>Acceso Administrativo - TuraTrip</h2>
@@ -80,7 +80,7 @@ public class EmailServiceImpl implements EmailService {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
-            
+
             helper.setFrom(remitente);
             helper.setTo(destino);
             helper.setSubject(asunto);

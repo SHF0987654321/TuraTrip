@@ -1,5 +1,5 @@
 package com.TuraTrip.backend.services;
- 
+
 import com.TuraTrip.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.TuraTrip.backend.exceptions.ArchivoInvalidoException;
 import com.TuraTrip.backend.exceptions.ErrorAlmacenamientoException;
@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
- 
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,26 +20,26 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
- 
+
 @Service
 @RequiredArgsConstructor
 public class ImagenPerfilServiceImpl implements ImagenPerfilService {
- 
+
     private final UsuarioRepository usuarioRepository;
- 
+
     @Value("${app.uploads-dir}")
     private String uploadsDir;
- 
+
     @Value("${app.api-url}")
     private String apiUrl;
- 
+
     private static final long MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
     private static final Set<String> TIPOS_PERMITIDOS = Set.of(
             "image/jpeg", // Cubre JPG y JPEG
             "image/png",
             "image/webp"
         );
- 
+
     /**
      * POST /api/v1/usuarios/perfil/foto
      * Sube una imagen, la guarda en disco y actualiza el campo fotoPerfil. (SUG-70)
@@ -59,20 +59,20 @@ public class ImagenPerfilServiceImpl implements ImagenPerfilService {
         if (archivo.getSize() > MAX_SIZE_BYTES) {
             throw new ArchivoDemasiadoGrandeException("El archivo no puede superar 5 MB");
         }
- 
+
         // ── Guardar en disco ─────────────────────────────────────────────────
         try {
             Path directorio = Paths.get(uploadsDir, "perfiles");
             Files.createDirectories(directorio);
- 
+
             String extension = obtenerExtension(archivo.getOriginalFilename());
             String nombreArchivo = UUID.randomUUID() + "." + extension;
             Path destino = directorio.resolve(nombreArchivo);
- 
+
             Files.copy(archivo.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
- 
+
             String urlFoto = apiUrl + "/uploads/perfiles/" + nombreArchivo;
- 
+
             Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
 
@@ -82,7 +82,7 @@ public class ImagenPerfilServiceImpl implements ImagenPerfilService {
                  // Extraemos el nombre del archivo de la URL
                  String nombreArchivoAnterior = usuario.getFotoPerfil().substring(usuario.getFotoPerfil().lastIndexOf("/") + 1);
                  Path rutaAnterior = Paths.get(uploadsDir, "perfiles").resolve(nombreArchivoAnterior);
-                 
+
                  // Eliminamos el archivo físico
                  Files.deleteIfExists(rutaAnterior);
              } catch (Exception e) {
@@ -94,14 +94,14 @@ public class ImagenPerfilServiceImpl implements ImagenPerfilService {
             // ── Actualizar usuario ───────────────────────────────────────────
             usuario.setFotoPerfil(urlFoto);
             usuarioRepository.save(usuario);
- 
+
             return urlFoto;
- 
+
         } catch (IOException e) {
             throw new ErrorAlmacenamientoException("Error al guardar la imagen en el disco", e);
         }
     }
- 
+
     // ── Helpers ──────────────────────────────────────────────────────────────
     private String obtenerExtension(String nombreOriginal) {
         if (nombreOriginal != null && nombreOriginal.contains(".")) {

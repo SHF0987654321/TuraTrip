@@ -44,16 +44,16 @@ public class PublicacionController {
         String correoUsuario = authentication.getName();
 
         PublicacionResponse nuevaPublicacion = publicacionService.crearPublicacion(correoUsuario, request, archivo);
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaPublicacion);
     }
 
     @GetMapping("/mias")
     public ResponseEntity<List<PublicacionResponse>> obtenerMisPublicaciones(Authentication authentication) {
         String correoUsuario = authentication.getName();
-        
+
         List<PublicacionResponse> misPublicaciones = publicacionService.obtenerPublicacionesPorUsuario(correoUsuario);
-        
+
         return ResponseEntity.ok(misPublicaciones);
     }
 }

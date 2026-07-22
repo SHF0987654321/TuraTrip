@@ -62,7 +62,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .roles(Set.of(rolUsuario))
             .habilitado(false)
             .build();
-        
+
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
         // Lógica de token de verificación
@@ -74,7 +74,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .fechaExpiracion(LocalDateTime.now().plusHours(24))
             .usado(false)
             .build();
-        
+
         tokenRepository.save(tokenVerificacion);
         emailService.enviarCorreoVerificacion(usuarioGuardado.getCorreo(), usuarioGuardado.getNombre(), tokenStr);
 
@@ -119,7 +119,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = tokenVerificacion.getUsuario();
         usuario.setHabilitado(true);
         usuarioRepository.save(usuario);
-    }   
+    }
 
     @Override
     @Transactional
@@ -133,7 +133,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .fechaExpiracion(LocalDateTime.now().plusMinutes(15))
                 .usado(false)
                 .build();
-    
+
             tokenRepository.save(tokenRecuperacion);
             emailService.enviarCorreoRecuperacion(usuario.getCorreo(), usuario.getNombre(), tokenStr);
         });
