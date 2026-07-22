@@ -8,7 +8,7 @@ import com.TuraTrip.backend.dtos.request.PublicacionRequest;
 import com.TuraTrip.backend.dtos.response.PublicacionResponse;
 
 public interface PublicacionService {
-    
+
     PublicacionResponse crearPublicacion(String correo, PublicacionRequest request, MultipartFile archivo);
 
     List<PublicacionResponse> obtenerPublicacionesPorUsuario(String correo);

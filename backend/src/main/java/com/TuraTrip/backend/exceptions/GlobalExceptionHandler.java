@@ -1,15 +1,15 @@
 package com.TuraTrip.backend.exceptions;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.springframework.security.core.AuthenticationException; 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -53,9 +53,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidacion(MethodArgumentNotValidException ex) {
         Map<String, String> errores = ex.getBindingResult().getFieldErrors().stream()
+            .filter(Objects::nonNull)
             .collect(Collectors.toMap(
-                FieldError::getField,
-                fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Campo inválido"
+                fe -> fe.getField(),
+                fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Campo inválido",
+                (existente, nuevo) -> existente // Maneja campos duplicados si los hubiera
             ));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errores);
     }
@@ -67,13 +69,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<Map<String, String>> handleDisabled(org.springframework.security.authentication.DisabledException ex) {
+    public ResponseEntity<Map<String, String>> handleDisabled(DisabledException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
             .body(Map.of("error", "Tu cuenta no ha sido activada. Por favor, revisa tu correo."));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenerico(Exception ex) {
+        log.error("Error no controlado: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(Map.of("error", "Error interno del servidor"));
     }
@@ -104,7 +107,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ArchivoDemasiadoGrandeException.class)
     public ResponseEntity<Map<String, String>> handleArchivoGrande(ArchivoDemasiadoGrandeException ex) {
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
             .body(Map.of("error", ex.getMessage()));
     }
 
@@ -116,7 +119,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ErrorAlmacenamientoException.class)
     public ResponseEntity<Map<String, String>> handleErrorAlmacenamiento(ErrorAlmacenamientoException ex) {
-        // Nota: Es buena práctica no exponer el ex.getMessage() real si contiene rutas del servidor (seguridad)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(Map.of("error", "Hubo un problema al procesar el archivo en el servidor: " + ex.getMessage()));
     }

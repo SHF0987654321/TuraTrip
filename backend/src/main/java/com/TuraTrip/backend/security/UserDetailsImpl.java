@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class UserDetailsImpl implements UserDetails {
-    
+
     private final Usuario usuario;
 
     public UserDetailsImpl(Usuario usuario) {

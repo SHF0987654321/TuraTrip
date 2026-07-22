@@ -53,7 +53,7 @@ public class PublicacionServiceImpl implements PublicacionService {
     @Override
     @Transactional
     public PublicacionResponse crearPublicacion(String correo, PublicacionRequest request, MultipartFile archivo) {
-        
+
         // 1. Validar que el usuario exista
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));

@@ -27,10 +27,10 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "usuarios")
-@Getter 
-@Setter 
-@NoArgsConstructor 
-@AllArgsConstructor 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Usuario {
 

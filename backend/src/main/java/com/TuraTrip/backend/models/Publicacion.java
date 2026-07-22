@@ -20,13 +20,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "publicaciones")
-@Getter 
-@Setter 
-@NoArgsConstructor 
-@AllArgsConstructor 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Publicacion { // Cambiado a singular por convención
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -42,7 +42,7 @@ public class Publicacion { // Cambiado a singular por convención
 
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
