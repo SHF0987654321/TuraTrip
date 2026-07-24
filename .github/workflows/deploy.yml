@@ -12,6 +12,16 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+      - name: Limpiar código anterior en el VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Borra de forma limpia los archivos del repositorio anterior sin afectar los volúmenes de Docker
+            find /var/www/seminario1/turatrip -mindepth 1 -delete 2>/dev/null || true
+
       - name: Copiar archivos al VPS vía SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -20,7 +30,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           source: ".,!node_modules,!output,!.git,!.github"
           target: "/var/www/seminario1/turatrip"
-          rm: true # 👈 ESTO ELIMINA los archivos obsoletos/duplicados antes de copiar los nuevos
 
       - name: Ejecutar comandos de Docker en el VPS por SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -32,7 +41,7 @@ jobs:
             cd /var/www/seminario1/turatrip
 
             # Usamos 'EOF' (con comillas simples) para desactivar toda interpretación de variables
-            cat <<EOF > .env
+            cat <<'EOF' > .env
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
             DB_USERNAME="${{ secrets.DB_USERNAME }}"
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
