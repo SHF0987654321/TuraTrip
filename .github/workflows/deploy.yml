@@ -45,6 +45,8 @@ jobs:
             SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
             SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
             UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
+            MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
+            MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
             EOF
 
             chmod 600 .env

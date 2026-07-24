@@ -5,6 +5,7 @@ export interface Publicacion {
   imagen: string;
   fechaCreacion: string;
   autorNombre?: string;
+  autorCorreo?: string;
   autorFotoPerfil?: string;
 }
 

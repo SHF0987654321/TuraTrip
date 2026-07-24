@@ -1,11 +1,11 @@
 package com.TuraTrip.backend.dtos.response;
 
-import java.util.List;
+import java.util.Set;
 
 public record PerfilResponse(
     Long id,
     String nombre,
     String correo,
     String fotoPerfil,
-    List<String> roles
+    Set<String> roles
 ) {}

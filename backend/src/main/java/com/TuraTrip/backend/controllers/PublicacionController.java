@@ -56,4 +56,22 @@ public class PublicacionController {
 
         return ResponseEntity.ok(misPublicaciones);
     }
+
+    @GetMapping("/usuario/{correo}")
+    public ResponseEntity<List<PublicacionResponse>> obtenerPublicacionesPorUsuario(
+            @PathVariable String correo) {
+        List<PublicacionResponse> publicaciones = publicacionService.obtenerPublicacionesPorUsuario(correo);
+        return ResponseEntity.ok(publicaciones);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarPublicacion(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String correoUsuario = authentication.getName();
+        publicacionService.eliminarPublicacion(id, correoUsuario);
+
+        return ResponseEntity.noContent().build();
+    }
 }

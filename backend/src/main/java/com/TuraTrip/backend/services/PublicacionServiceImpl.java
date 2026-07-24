@@ -2,32 +2,21 @@ package com.TuraTrip.backend.services;
 
 import com.TuraTrip.backend.dtos.request.PublicacionRequest;
 import com.TuraTrip.backend.dtos.response.PublicacionResponse;
+import com.TuraTrip.backend.exceptions.AccesoNoAutorizadoException;
+import com.TuraTrip.backend.exceptions.PublicacionNoEncontradaException;
 import com.TuraTrip.backend.exceptions.UsuarioNoEncontradoException;
 import com.TuraTrip.backend.mappers.PublicacionMapper;
-import com.TuraTrip.backend.exceptions.ArchivoInvalidoException;
-import com.TuraTrip.backend.exceptions.FormatoNoSoportadoException;
-import com.TuraTrip.backend.exceptions.PublicacionNoEncontradaException;
-import com.TuraTrip.backend.exceptions.ArchivoDemasiadoGrandeException;
-import com.TuraTrip.backend.exceptions.ErrorAlmacenamientoException;
 import com.TuraTrip.backend.models.Publicacion;
 import com.TuraTrip.backend.models.Usuario;
 import com.TuraTrip.backend.repositories.PublicacionRepository;
 import com.TuraTrip.backend.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,19 +25,7 @@ public class PublicacionServiceImpl implements PublicacionService {
     private final PublicacionRepository publicacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final PublicacionMapper publicacionMapper;
-
-    @Value("${app.uploads-dir}")
-    private String uploadsDir;
-
-    @Value("${app.api-url}")
-    private String apiUrl;
-
-    private static final long MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-    private static final Set<String> TIPOS_PERMITIDOS = Set.of(
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-    );
+    private final StorageService storageService;
 
     @Override
     @Transactional
@@ -58,40 +35,14 @@ public class PublicacionServiceImpl implements PublicacionService {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
 
-        // 2. Validar imagen (reutilizando la misma lógica robusta que ya hiciste)
-        if (archivo == null || archivo.isEmpty()) {
-            throw new ArchivoInvalidoException("La imagen de la publicación es obligatoria");
-        }
-        if (!TIPOS_PERMITIDOS.contains(archivo.getContentType())) {
-            throw new FormatoNoSoportadoException("Solo se permiten imágenes JPG, JPEG, PNG o WebP");
-        }
-        if (archivo.getSize() > MAX_SIZE_BYTES) {
-            throw new ArchivoDemasiadoGrandeException("El archivo no puede superar 5 MB");
-        }
+        // 2. Guardar archivo utilizando el StorageService (devuelve la ruta relativa: ej. "publicaciones/uuid.jpg")
+        String rutaRelativa = storageService.guardarArchivo(archivo, "publicaciones");
 
-        // 3. Guardar archivo en disco
-        String urlImagen;
-        try {
-            Path directorio = Paths.get(uploadsDir, "publicaciones"); // Carpeta separada para orden
-            Files.createDirectories(directorio);
-
-            String extension = obtenerExtension(archivo.getOriginalFilename());
-            String nombreArchivo = UUID.randomUUID() + "." + extension;
-            Path destino = directorio.resolve(nombreArchivo);
-
-            Files.copy(archivo.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
-
-            urlImagen = apiUrl + "/uploads/publicaciones/" + nombreArchivo;
-
-        } catch (IOException e) {
-            throw new ErrorAlmacenamientoException("Error al guardar la imagen en el disco", e);
-        }
-
-        // 4. Construir y guardar la publicación
+        // 3. Construir y guardar la publicación con la ruta relativa
         Publicacion publicacion = Publicacion.builder()
                 .titulo(request.titulo())
                 .descripcion(request.descripcion())
-                .imagen(urlImagen)
+                .imagen(rutaRelativa)
                 .fechaCreacion(LocalDateTime.now())
                 .usuario(usuario)
                 .build();
@@ -99,16 +50,6 @@ public class PublicacionServiceImpl implements PublicacionService {
         Publicacion guardada = publicacionRepository.save(publicacion);
 
         return publicacionMapper.toResponse(guardada);
-    }
-
-    private String obtenerExtension(String nombreOriginal) {
-        if (nombreOriginal != null && nombreOriginal.contains(".")) {
-            String ext = nombreOriginal.substring(nombreOriginal.lastIndexOf('.') + 1).toLowerCase();
-            if (Set.of("jpg", "jpeg", "png", "webp").contains(ext)) {
-                return ext;
-            }
-        }
-        throw new FormatoNoSoportadoException("Extensión de archivo no válida");
     }
 
     @Override
@@ -141,5 +82,33 @@ public class PublicacionServiceImpl implements PublicacionService {
                 .orElseThrow(() -> new PublicacionNoEncontradaException("Publicación no encontrada"));
 
         return publicacionMapper.toResponse(publicacion);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarPublicacion(Long id, String correoUsuario) {
+        // 1. Buscar la publicación
+        Publicacion publicacion = publicacionRepository.findById(id)
+                .orElseThrow(() -> new PublicacionNoEncontradaException("La publicación no existe"));
+
+        // 2. Buscar al usuario autenticado
+        Usuario usuarioActual = usuarioRepository.findByCorreo(correoUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+
+        // 3. Verificar si el usuario es ADMIN o si es el propietario de la publicación
+        boolean esAdmin = usuarioActual.getRoles().stream()
+                .anyMatch(rol -> rol.getNombre().equalsIgnoreCase("ADMIN"));
+
+        boolean esPropietario = publicacion.getUsuario().getId().equals(usuarioActual.getId());
+
+        if (!esAdmin && !esPropietario) {
+            throw new AccesoNoAutorizadoException("No tienes permisos para eliminar esta publicación");
+        }
+
+        // 4. Eliminar el archivo del almacenamiento físico
+        storageService.eliminarArchivo(publicacion.getImagen());
+
+        // 5. Eliminar el registro en la base de datos
+        publicacionRepository.delete(publicacion);
     }
 }
