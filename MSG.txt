@@ -1,8 +1,0 @@
-feat(publicaciones): refactor modular de UI, soporte LocalStorage y bases para eliminacion SUG-47
-
-- Backend: Implementado StorageService y LocalStorageServiceImpl para gestion de archivos local.
-- Backend: Ajustes en PublicacionController, PerfilController y SecurityConfig.
-- Frontend: Refactor de Navbar utilizando Toast generico en common/Toast.tsx.
-- Frontend: Creacion de componentes desacoplados (UserAvatar, ModalImagenExpandida, BotonOpcionesPublicacion, CabeceraAutor).
-- Frontend: Modularizacion de logica con custom hooks (useModalPublicar, usePerfilVista, useEditarPerfilHeader).
-- Frontend: Incorporadas vistas editables de perfil y perfiles por correo.
