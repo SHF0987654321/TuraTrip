@@ -16,4 +16,6 @@ public interface PublicacionService {
     List<PublicacionResponse> obtenerTodasLasPublicaciones();
 
     PublicacionResponse obtenerPublicacionPorId(Long id);
+
+    void eliminarPublicacion(Long id, String correoUsuario);
 }

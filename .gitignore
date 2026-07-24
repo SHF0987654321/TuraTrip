@@ -14,9 +14,6 @@ frontend/.next/
 frontend/node_modules/
 frontend/.env.local
 
-# Carpetas de almacenamiento
-uploads_data
-
 # OS
 .DS_Store
 Thumbs.db

@@ -24,6 +24,14 @@ public class PerfilController {
         return ResponseEntity.ok(perfil);
     }
 
+    @GetMapping("/perfil/{correo}")
+    public ResponseEntity<PerfilResponse> obtenerPerfilPorCorreo(
+            @PathVariable String correo) {
+
+        PerfilResponse perfil = perfilService.obtenerPerfil(correo);
+        return ResponseEntity.ok(perfil);
+    }
+
     @PutMapping("/perfil")
     public ResponseEntity<PerfilResponse> editarPerfil(
             Authentication authentication,
