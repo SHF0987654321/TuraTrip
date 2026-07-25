@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 import ModalPublicar from "@/components/publicaciones/ModalPublicar";
+import UserAvatar from "@/components/common/UserAvatar";
+import Toast from "@/components/common/Toast";
 
 export default function Navbar() {
   const { usuario, logout } = useAuthStore();
@@ -11,7 +13,7 @@ export default function Navbar() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mostrarToast, setMostrarToast] = useState(false);
-  const [postIdCreado, setPostIdCreado] = useState<number | null>(null); // Estado para guardar el ID
+  const [postIdCreado, setPostIdCreado] = useState<number | null>(null);
 
   const handleLogout = () => {
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -22,7 +24,7 @@ export default function Navbar() {
   const handlePublicacionExitosas = (idPublicacion: number) => {
     setPostIdCreado(idPublicacion);
     setMostrarToast(true);
-    router.refresh(); 
+    window.dispatchEvent(new Event("postCreado"));
   };
 
   return (
@@ -31,29 +33,20 @@ export default function Navbar() {
         <Link href="/" className="font-black text-xl text-[hsl(174_72%_40%)] tracking-wider">
           TuraTrip
         </Link>
-        
+
         <div className="flex items-center gap-4">
           {usuario ? (
             <>
-              <Link 
-                href="/perfil" 
+              <Link
+                href="/perfil"
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition"
               >
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 flex-shrink-0">
-                  {usuario.fotoPerfil ? (
-                    <img src={usuario.fotoPerfil} alt={usuario.nombre} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
-                      {usuario.nombre?.[0] || "U"}
-                    </div>
-                  )}
-                </div>
+                <UserAvatar fotoPerfil={usuario.fotoPerfil} nombre={usuario.nombre} size="md" />
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 hidden sm:inline">
                   {usuario.nombre}
                 </span>
               </Link>
 
-              {/* BOTÓN QUE ABRE EL MODAL FLOTANTE */}
               <button
                 onClick={() => setIsModalOpen(true)}
                 title="Publicar un lugar"
@@ -64,16 +57,16 @@ export default function Navbar() {
                 </svg>
               </button>
 
-              <button 
-                onClick={handleLogout} 
-                className="text-red-500 text-xs font-semibold hover:underline px-2 py-1"
+              <button
+                onClick={handleLogout}
+                className="text-red-500 text-xs font-semibold hover:underline px-2 py-1 cursor-pointer"
               >
                 Salir
               </button>
             </>
           ) : (
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="bg-[hsl(174_72%_40%)] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition shadow-sm"
             >
               Iniciar sesión
@@ -82,30 +75,24 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL DE CREACIÓN */}
-      <ModalPublicar 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={handlePublicacionExitosas} 
+      <ModalPublicar
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handlePublicacionExitosas}
       />
 
-      {/* TOAST FLOTANTE */}
-      {mostrarToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <span className="text-sm font-medium">¡Tu post se envió con éxito!</span>
-          <button 
-            onClick={() => {
-              setMostrarToast(false);
-              if (postIdCreado) {
-                router.push(`/publicaciones/${postIdCreado}`); // Redirige exactamente al detalle del post
-              }
-            }}
-            className="bg-[hsl(174_72%_40%)] hover:bg-[hsl(174_72%_35%)] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
-          >
-            Ver
-          </button>
-        </div>
-      )}
+      {/* 🎯 TOAST GENÉRICO REUTILIZABLE */}
+      <Toast
+        mostrar={mostrarToast}
+        mensaje="¡Tu publicación se envió con éxito!"
+        onClose={() => setMostrarToast(false)}
+        accion={{
+          label: "Ver",
+          onClick: () => {
+            if (postIdCreado) router.push(`/publicaciones/${postIdCreado}`);
+          },
+        }}
+      />
     </>
   );
 }

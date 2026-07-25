@@ -24,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 import com.TuraTrip.backend.security.JwtTokenFilter;
 
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.DELETE;
 
 @Configuration
 @EnableWebSecurity
@@ -44,7 +46,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/v1/auth/**").permitAll()
             .requestMatchers("/uploads/**").permitAll()
+            .requestMatchers(GET, "/api/v1/usuarios/perfil/*").permitAll()
             .requestMatchers(GET, "/api/v1/publicaciones/mias").authenticated()
+            .requestMatchers(GET, "/api/v1/publicaciones/usuario/*").permitAll()
+            .requestMatchers(POST, "/api/v1/publicaciones/**").authenticated()
+            .requestMatchers(DELETE, "/api/v1/publicaciones/**").authenticated()
             .requestMatchers(GET, "/api/v1/publicaciones/**").permitAll()
             .anyRequest().authenticated()
             );

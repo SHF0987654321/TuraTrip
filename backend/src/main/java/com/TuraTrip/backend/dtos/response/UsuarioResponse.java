@@ -9,5 +9,6 @@ public record UsuarioResponse(
     String correo,
     Boolean habilitado,
     Set<RolResponse> roles,
-    LocalDateTime creado
+    LocalDateTime creado,
+    String fotoPerfil
 ) {}

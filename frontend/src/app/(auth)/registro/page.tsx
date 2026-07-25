@@ -223,7 +223,7 @@ function Field({
       {children}
       {error && (
         <p className="text-xs text-red-500 flex items-center gap-1">
-          <span aria-hidden="true">âš </span> {error}
+          <span aria-hidden="true">âš </span> {error}
         </p>
       )}
     </div>
