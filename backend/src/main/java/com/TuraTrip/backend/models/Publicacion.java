@@ -18,6 +18,8 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "publicaciones")
 @Getter
@@ -40,6 +42,7 @@ public class Publicacion { // Cambiado a singular por convención
     @Column(nullable = false, length = 500)
     private String imagen;
 
+    @CreationTimestamp
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 

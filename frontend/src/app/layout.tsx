@@ -3,8 +3,9 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TuraTrip",
-  description: "Descubre y comparte lugares increíbles",
+  title: "TuraTrip - Descubre y comparte lugares increíbles",
+  description:
+    "Plataforma para descubrir y compartir destinos turísticos y culturales.",
 };
 
 export default function RootLayout({
@@ -14,8 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <body className="antialiased min-h-screen" suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           {children}
         </ThemeProvider>
       </body>

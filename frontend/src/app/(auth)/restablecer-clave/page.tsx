@@ -3,8 +3,8 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import api from "@/lib/api";
+import { Eye, EyeOff, Loader2, AlertTriangle } from "lucide-react";
+import { useAuthActions } from "@/hooks/useAuthActions";
 import axios from "axios";
 
 function RecuperarClaveForm() {
@@ -14,6 +14,8 @@ function RecuperarClaveForm() {
 
   const [nuevaClave, setNuevaClave] = useState("");
   const [confirmarClave, setConfirmarClave] = useState("");
+  const { confirmarNuevaClave } = useAuthActions();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -31,6 +33,11 @@ function RecuperarClaveForm() {
     e.preventDefault();
     setError("");
 
+    if (!token) {
+      setError("El token de recuperación no está presente o no es válido.");
+      return;
+    }
+
     if (nuevaClave !== confirmarClave) {
       setError("Las contraseñas ingresadas no coinciden.");
       return;
@@ -43,10 +50,8 @@ function RecuperarClaveForm() {
 
     setCargando(true);
     try {
-      await api.post("/api/v1/auth/restablecer-clave/confirmar", {
-        token,
-        nuevaClave,
-      });
+      // Usamos directamente el método expuesto por useAuthActions
+      await confirmarNuevaClave(token, nuevaClave);
 
       setExito(true);
       setTimeout(() => {
@@ -54,8 +59,17 @@ function RecuperarClaveForm() {
       }, 3000);
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data) {
-        const data = err.response.data as { error?: string; message?: string };
-        setError(data.error || data.message || "Error al intentar redefinir la clave.");
+        const data = err.response.data as {
+          error?: string;
+          mensaje?: string;
+          message?: string;
+        };
+        setError(
+          data.error ||
+            data.mensaje ||
+            data.message ||
+            "Error al intentar redefinir la clave."
+        );
       } else {
         setError("Ocurrió un error inesperado al conectar con el servidor.");
       }
@@ -64,12 +78,13 @@ function RecuperarClaveForm() {
     }
   };
 
-  // Si falta el token en la URL
+  // Sin Token en la URL
   if (!token) {
     return (
       <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-4 flex flex-col gap-3">
-        <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-          �  {error || "Petición inválida. Acceso restringido."}
+        <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
+          <AlertTriangle size={16} />{" "}
+          {error || "Petición inválida. Acceso restringido."}
         </p>
         <Link
           href="/login"
@@ -81,10 +96,10 @@ function RecuperarClaveForm() {
     );
   }
 
-  // Estado cuando el cambio fue exitoso
+  // Éxito al actualizar
   if (exito) {
     return (
-      <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 space-y-3">
+      <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 space-y-3 text-center">
         <p className="text-sm text-green-700 dark:text-green-300 font-medium">
           ¡Tu contraseña ha sido actualizada con éxito!
         </p>
@@ -100,12 +115,12 @@ function RecuperarClaveForm() {
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3">
           <p className="text-sm text-red-700 dark:text-red-300 flex items-center gap-1.5">
-            <span aria-hidden="true">� </span> {error}
+            <AlertTriangle size={16} /> {error}
           </p>
         </div>
       )}
 
-      {/* Campo: Nueva Contraseña */}
+      {/* Nueva Contraseña */}
       <Field label="Nueva Contraseña">
         <div className="relative">
           <input
@@ -115,7 +130,7 @@ function RecuperarClaveForm() {
             onChange={(e) => setNuevaClave(e.target.value)}
             placeholder="Mínimo 8 caracteres"
             autoComplete="new-password"
-            className={inputClass() + " pr-10"}
+            className={`${inputClass()} pr-10`}
           />
           <button
             type="button"
@@ -127,7 +142,7 @@ function RecuperarClaveForm() {
         </div>
       </Field>
 
-      {/* Campo: Confirmar Contraseña */}
+      {/* Confirmar Contraseña */}
       <Field label="Confirmar Contraseña">
         <div className="relative">
           <input
@@ -137,7 +152,7 @@ function RecuperarClaveForm() {
             onChange={(e) => setConfirmarClave(e.target.value)}
             placeholder="Repite tu nueva contraseña"
             autoComplete="new-password"
-            className={inputClass() + " pr-10"}
+            className={`${inputClass()} pr-10`}
           />
           <button
             type="button"
@@ -202,7 +217,6 @@ export default function RecuperarClavePage() {
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────
 function inputClass() {
   return [
     "w-full rounded-xl px-4 py-3 text-sm outline-none transition-all",
@@ -213,7 +227,13 @@ function inputClass() {
   ].join(" ");
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-semibold text-[hsl(210_20%_30%)] dark:text-[hsl(174_20%_70%)] uppercase tracking-wide">

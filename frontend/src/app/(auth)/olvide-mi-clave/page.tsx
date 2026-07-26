@@ -3,14 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import api from "@/lib/api";
 import axios from "axios";
+import { useAuthActions } from "@/hooks/useAuthActions";
+import { Field, inputClass } from "@/components/ui/FormField";
 
 export default function OlvidoClavePage() {
+  const { recuperarClave } = useAuthActions();
+
   const [correo, setCorreo] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+
+  const MENSAJE_EXITO_GENERICO =
+    "Si tu correo electrónico coincide con una cuenta registrada, recibirás un enlace para restablecer tu contraseña en los próximos minutos.";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,16 +25,22 @@ export default function OlvidoClavePage() {
     setError("");
 
     try {
-      await api.post("/api/v1/auth/restablecer-clave/solicitar", { correo });
-
-      // Respuesta deliberadamente ambigua por protección de datos
-      setMensaje(
-        "Si tu correo electrónico coincide con una cuenta registrada, recibirás un enlace para restablecer tu contraseña en los próximos minutos."
-      );
+      await recuperarClave(correo);
+      setMensaje(MENSAJE_EXITO_GENERICO);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.data) {
-        const data = err.response.data as { error?: string; mensaje?: string };
-        setError(data.error || data.mensaje || "No se pudo procesar la solicitud.");
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+
+        // Si el servidor responde con 4xx (p. ej. 404 No Encontrado o 400 Bad Request),
+        // mantenemos la respuesta neutra por privacidad para evitar enumeración de usuarios.
+        if (status && status >= 400 && status < 500) {
+          setMensaje(MENSAJE_EXITO_GENERICO);
+        } else {
+          // Errores 5xx (servidor caído, base de datos fuera de línea) o fallas de red
+          setError(
+            "Ocurrió un error en el servidor. Por favor, inténtalo más tarde."
+          );
+        }
       } else {
         setError("Ocurrió un error inesperado al conectar con el servidor.");
       }
@@ -39,7 +51,6 @@ export default function OlvidoClavePage() {
 
   return (
     <div className="w-full max-w-sm flex flex-col gap-6">
-      {/* Encabezado e historia de navegación */}
       <div>
         <Link
           href="/login"
@@ -54,11 +65,11 @@ export default function OlvidoClavePage() {
           ¿Olvidaste tu contraseña?
         </h2>
         <p className="text-sm text-[hsl(210_10%_52%)] mt-1">
-          Introduce tu correo electrónico para enviarte las instrucciones de recuperación.
+          Introduce tu correo electrónico para enviarte las instrucciones de
+          recuperación.
         </p>
       </div>
 
-      {/* Estado de mensaje exitoso */}
       {mensaje ? (
         <div className="flex flex-col gap-4 rounded-xl bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800 p-4">
           <p className="text-sm text-teal-800 dark:text-teal-300 leading-relaxed">
@@ -72,7 +83,6 @@ export default function OlvidoClavePage() {
           </Link>
         </div>
       ) : (
-        /* Formulario principal */
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
             <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3">
@@ -119,28 +129,6 @@ export default function OlvidoClavePage() {
           </Link>
         </p>
       )}
-    </div>
-  );
-}
-
-// ── Helpers idénticos al Login y Registro ─────────────────────────────
-function inputClass() {
-  return [
-    "w-full rounded-xl px-4 py-3 text-sm outline-none transition-all",
-    "bg-white dark:bg-[hsl(210_20%_12%)]",
-    "text-[hsl(210_20%_12%)] dark:text-[hsl(174_20%_94%)]",
-    "placeholder:text-[hsl(210_10%_70%)] dark:placeholder:text-[hsl(210_10%_40%)]",
-    "border border-[hsl(174_20%_88%)] dark:border-[hsl(210_15%_20%)] focus:ring-2 focus:ring-[hsl(174_72%_40%)/30%] focus:border-[hsl(174_72%_40%)]",
-  ].join(" ");
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-[hsl(210_20%_30%)] dark:text-[hsl(174_20%_70%)] uppercase tracking-wide">
-        {label}
-      </label>
-      {children}
     </div>
   );
 }

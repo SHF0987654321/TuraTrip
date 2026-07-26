@@ -25,6 +25,14 @@ public class PerfilServiceImpl implements PerfilService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PerfilResponse obtenerPerfilPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+        return usuarioMapper.toPerfilResponse(usuario);
+    }
+
+    @Override
     @Transactional
     public PerfilResponse editarPerfil(String correo, EditarPerfilRequest request) {
         Usuario usuario = buscarPorCorreo(correo);

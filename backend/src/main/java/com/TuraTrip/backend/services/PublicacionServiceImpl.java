@@ -11,12 +11,16 @@ import com.TuraTrip.backend.models.Usuario;
 import com.TuraTrip.backend.repositories.PublicacionRepository;
 import com.TuraTrip.backend.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -54,25 +58,34 @@ public class PublicacionServiceImpl implements PublicacionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PublicacionResponse> obtenerTodasLasPublicaciones() {
-        List<Publicacion> publicaciones = publicacionRepository.findAllByOrderByFechaCreacionDesc();
-
-        return publicaciones.stream()
-                .map(publicacionMapper::toResponse)
-                .toList();
+    public Page<PublicacionResponse> obtenerTodasLasPublicaciones(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaCreacion").descending());
+        return publicacionRepository.findAll(pageable)
+                .map(publicacionMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PublicacionResponse> obtenerPublicacionesPorUsuario(String correo) {
+    public Page<PublicacionResponse> obtenerPublicacionesPorUsuarioId(Long usuarioId, int page, int size) {
+        // Validar primero si el usuario existe para lanzar la excepción correspondiente si no se halla
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new UsuarioNoEncontradoException("Usuario no encontrado");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaCreacion").descending());
+        return publicacionRepository.findAllByUsuarioId(usuarioId, pageable)
+                .map(publicacionMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PublicacionResponse> obtenerPublicacionesPorCorreoUsuario(String correo, int page, int size) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
 
-        List<Publicacion> publicaciones = publicacionRepository.findAllByUsuarioOrderByFechaCreacionDesc(usuario);
-
-        return publicaciones.stream()
-                .map(publicacionMapper::toResponse)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaCreacion").descending());
+        return publicacionRepository.findAllByUsuario(usuario, pageable)
+                .map(publicacionMapper::toResponse);
     }
 
     @Override

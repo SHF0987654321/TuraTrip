@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function AuthLayout({
   children,
 }: {
@@ -25,9 +27,24 @@ export default function AuthLayout({
 
           <div className="mt-12 space-y-3 text-left">
             {[
-              { emoji: "🏔️", name: "Sierra Nevada", loc: "Colombia", likes: 234 },
-              { emoji: "🏖️", name: "Playa Spratt Bight", loc: "San Andrés", likes: 189 },
-              { emoji: "🏛️", name: "Castillo San Felipe", loc: "Cartagena", likes: 312 },
+              {
+                emoji: "🏔️",
+                name: "Sierra Nevada",
+                loc: "Colombia",
+                likes: 234,
+              },
+              {
+                emoji: "🏖️",
+                name: "Playa Spratt Bight",
+                loc: "San Andrés",
+                likes: 189,
+              },
+              {
+                emoji: "🏛️",
+                name: "Castillo San Felipe",
+                loc: "Cartagena",
+                likes: 312,
+              },
             ].map((place) => (
               <div
                 key={place.name}
@@ -47,7 +64,7 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Panel derecho — formulario */}
+      {/* Panel derecho — formulario dinámico */}
       <div className="flex-1 flex items-center justify-center p-6 bg-[hsl(0_0%_98%)] dark:bg-[hsl(210_22%_8%)]">
         {children}
       </div>

@@ -1,29 +1,27 @@
-# Etapa 1 — build
+# Etapa 1 — Build
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
+
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+RUN mvn dependency:go-offline -B
+
 COPY src ./src
-RUN mvn package -DskipTests -q
+RUN mvn package -DskipTests -B -q
 
-# Etapa 2 — runtime (imagen mínima)
+# Etapa 2 — Runtime
 FROM eclipse-temurin:21-jre-alpine
-
-# Definir directorio de trabajo principal
 WORKDIR /app
 
-# Crear usuario y grupo (seguridad)
-RUN addgroup -S spring && adduser -S spring -G spring
+# Crear el grupo y usuario asignando explícitamente el UID/GID 1000
+RUN addgroup -g 1000 -S spring && \
+    adduser -u 1000 -S spring -G spring && \
+    mkdir -p /app/uploads && \
+    chown -R spring:spring /app
 
-# Copiar tus archivos
 COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
-COPY entrypoint.sh .
 
-# Permisos y configuración final
-RUN chmod +x entrypoint.sh && chown spring:spring entrypoint.sh
+# Correr de forma nativa como el usuario 'spring' sin pasar por root
+USER spring
 
-# Exponer puerto
 EXPOSE 8080
-
-# Punto de entrada
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

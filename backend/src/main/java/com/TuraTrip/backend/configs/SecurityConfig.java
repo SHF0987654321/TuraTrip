@@ -44,15 +44,16 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/v1/auth/**").permitAll()
-            .requestMatchers("/uploads/**").permitAll()
-            .requestMatchers(GET, "/api/v1/usuarios/perfil/*").permitAll()
-            .requestMatchers(GET, "/api/v1/publicaciones/mias").authenticated()
-            .requestMatchers(GET, "/api/v1/publicaciones/usuario/*").permitAll()
-            .requestMatchers(POST, "/api/v1/publicaciones/**").authenticated()
-            .requestMatchers(DELETE, "/api/v1/publicaciones/**").authenticated()
-            .requestMatchers(GET, "/api/v1/publicaciones/**").permitAll()
-            .anyRequest().authenticated()
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers(GET, "/api/v1/usuarios/perfil/*").permitAll()
+                .requestMatchers(GET, "/api/v1/usuarios/perfil/{id:\\d+}").permitAll()
+                .requestMatchers(GET, "/api/v1/publicaciones/mias").authenticated()
+                .requestMatchers(GET, "/api/v1/publicaciones/usuario/*").permitAll()
+                .requestMatchers(POST, "/api/v1/publicaciones/**").authenticated()
+                .requestMatchers(DELETE, "/api/v1/publicaciones/**").authenticated()
+                .requestMatchers(GET, "/api/v1/publicaciones/**").permitAll()
+                .anyRequest().authenticated()
             );
 
         http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -65,7 +66,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(frontendUrl));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        // Se definen explícitamente las cabeceras permitidas y expuestas para evitar roces con credentials
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

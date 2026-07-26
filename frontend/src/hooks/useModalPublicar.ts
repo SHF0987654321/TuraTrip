@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import api from "@/lib/api";
-import { PublicacionRequest } from "@/types/publicacion";
+import { publicacionService } from "@/services/publicacionService";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -11,7 +10,10 @@ interface UseModalPublicarProps {
   onClose: () => void;
 }
 
-export function useModalPublicar({ onSuccess, onClose }: UseModalPublicarProps) {
+export function useModalPublicar({
+  onSuccess,
+  onClose,
+}: UseModalPublicarProps) {
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -34,7 +36,9 @@ export function useModalPublicar({ onSuccess, onClose }: UseModalPublicarProps) 
     }
 
     if (file.size > MAX_SIZE_BYTES) {
-      setError("La imagen supera el tamaño máximo permitido (5 MB). Selecciona una más liviana.");
+      setError(
+        "La imagen supera el tamaño máximo permitido (5 MB). Selecciona una más liviana."
+      );
       e.target.value = "";
       setArchivo(null);
       return;
@@ -54,25 +58,21 @@ export function useModalPublicar({ onSuccess, onClose }: UseModalPublicarProps) 
     setCargando(true);
     setError("");
 
-    const datosPublicacion: PublicacionRequest = { titulo, descripcion };
-    const formData = new FormData();
-    const publicacionBlob = new Blob([JSON.stringify(datosPublicacion)], {
-      type: "application/json",
-    });
-
-    formData.append("publicacion", publicacionBlob);
-    formData.append("archivo", archivo);
-
     try {
-      const response = await api.post("/api/v1/publicaciones", formData);
+      const nuevaPublicacion = await publicacionService.crear(
+        { titulo, descripcion },
+        archivo
+      );
       resetForm();
-      onSuccess(response.data.id);
+      onSuccess(nuevaPublicacion.id);
       onClose();
     } catch (err: any) {
       setCargando(false);
 
       if (err.response?.status === 413) {
-        setError("La imagen es demasiado grande. El tamaño máximo permitido es de 5 MB.");
+        setError(
+          "La imagen es demasiado grande. El tamaño máximo permitido es de 5 MB."
+        );
       } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.data?.message) {

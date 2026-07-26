@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import api from "@/lib/api";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
+import { useAuthActions } from "@/hooks/useAuthActions";
+import { Field, inputClass } from "@/components/ui/FormField";
 
-// ── Schema de validación ──────────────────────────────────────────────
 const schema = z
   .object({
     nombre: z
@@ -24,7 +23,10 @@ const schema = z
       .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
       .regex(/[a-z]/, "Debe contener al menos una minúscula")
       .regex(/[0-9]/, "Debe contener al menos un número")
-      .regex(/[@$!%*?&]/, "Debe contener al menos un carácter especial (@$!%*?&)"),
+      .regex(
+        /[@$!%*?&]/,
+        "Debe contener al menos un carácter especial (@$!%*?&)"
+      ),
     confirmarClave: z.string(),
   })
   .refine((data) => data.clave === data.confirmarClave, {
@@ -34,9 +36,8 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-// ── Componente ────────────────────────────────────────────────────────
 export default function RegistroPage() {
-  const router = useRouter();
+  const { registro } = useAuthActions();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -52,26 +53,22 @@ export default function RegistroPage() {
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     try {
-      await api.post("/api/v1/auth/registro", {
+      await registro({
         nombre: data.nombre,
         correo: data.correo,
         clave: data.clave,
       });
-
       reset();
-  
-      // Redirigimos siempre al login con un mensaje neutral, evitando enumeración
-      router.push("/login?verificar=true");
-      
     } catch (err: unknown) {
-      // Mensaje neutral de seguridad para evitar enumeración de usuarios
-      setServerError("Si los datos son correctos, recibirás un correo electrónico con instrucciones para completar tu registro.");
-      
-      // Log técnico para debugging en consola
+      setServerError(
+        "Si los datos son correctos, recibirás un correo electrónico con instrucciones para completar tu registro."
+      );
       if (axios.isAxiosError(err)) {
-        console.error("Error técnico del servidor:", err.response?.status, err.response?.data);
-      } else {
-        console.error("Error inesperado:", err);
+        console.error(
+          "Error técnico del servidor:",
+          err.response?.status,
+          err.response?.data
+        );
       }
     }
   };
@@ -98,7 +95,9 @@ export default function RegistroPage() {
 
       {serverError && (
         <div className="rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 px-4 py-3">
-          <p className="text-sm text-blue-700 dark:text-blue-400">{serverError}</p>
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            {serverError}
+          </p>
         </div>
       )}
 
@@ -136,14 +135,16 @@ export default function RegistroPage() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(210_10%_52%)] hover:text-[hsl(174_72%_40%)] transition-colors"
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </Field>
 
-        <Field label="Confirmar contraseña" error={errors.confirmarClave?.message}>
+        <Field
+          label="Confirmar contraseña"
+          error={errors.confirmarClave?.message}
+        >
           <div className="relative">
             <input
               {...register("confirmarClave")}
@@ -156,7 +157,6 @@ export default function RegistroPage() {
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(210_10%_52%)] hover:text-[hsl(174_72%_40%)] transition-colors"
-              aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -166,13 +166,12 @@ export default function RegistroPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-[hsl(174_72%_40%)] px-6 py-3.5 text-white font-semibold text-sm hover:bg-[hsl(174_72%_35%)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-[hsl(174_72%_40%)] px-6 py-3.5 text-white font-semibold text-sm hover:bg-[hsl(174_72%_35%)] disabled:opacity-60 transition-colors"
           style={{ fontFamily: "Syne, sans-serif" }}
         >
           {isSubmitting ? (
             <>
-              <Loader2 size={16} className="animate-spin" />
-              Creando cuenta…
+              <Loader2 size={16} className="animate-spin" /> Creando cuenta…
             </>
           ) : (
             "Crear cuenta"
@@ -189,43 +188,6 @@ export default function RegistroPage() {
           Inicia sesión
         </Link>
       </p>
-    </div>
-  );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────
-function inputClass(hasError: boolean) {
-  return [
-    "w-full rounded-xl px-4 py-3 text-sm outline-none transition-all",
-    "bg-white dark:bg-[hsl(210_20%_12%)]",
-    "text-[hsl(210_20%_12%)] dark:text-[hsl(174_20%_94%)]",
-    "placeholder:text-[hsl(210_10%_70%)] dark:placeholder:text-[hsl(210_10%_40%)]",
-    hasError
-      ? "border border-red-400 focus:ring-2 focus:ring-red-300"
-      : "border border-[hsl(174_20%_88%)] dark:border-[hsl(210_15%_20%)] focus:ring-2 focus:ring-[hsl(174_72%_40%)/30%] focus:border-[hsl(174_72%_40%)]",
-  ].join(" ");
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-[hsl(210_20%_30%)] dark:text-[hsl(174_20%_70%)] uppercase tracking-wide">
-        {label}
-      </label>
-      {children}
-      {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <span aria-hidden="true">� </span> {error}
-        </p>
-      )}
     </div>
   );
 }

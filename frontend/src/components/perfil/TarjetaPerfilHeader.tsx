@@ -1,4 +1,5 @@
 "use client";
+
 import { Perfil } from "@/types/usuario";
 import AvatarPerfilEditable from "@/components/perfil/AvatarPerfilEditable";
 import PerfilNombreForm from "@/components/perfil/PerfilNombreForm";
@@ -7,7 +8,7 @@ import { useEditarPerfilHeader } from "@/hooks/useEditarPerfilHeader";
 interface TarjetaPerfilHeaderProps {
   perfil: Perfil;
   esMiPerfil: boolean;
-  onPerfilActualizado: (nuevoPerfil: Perfil, nuevaFotoConCache?: string) => void;
+  onPerfilActualizado: (nuevoPerfil: Perfil) => void;
   onExpandImage: (imagenUrl: string) => void;
 }
 
@@ -27,7 +28,10 @@ export default function TarjetaPerfilHeader({
     handleSaveName,
     handleFileChange,
     cancelarEdicion,
-  } = useEditarPerfilHeader({ perfil, onPerfilActualizado });
+  } = useEditarPerfilHeader({
+    perfil,
+    onPerfilActualizado,
+  });
 
   const handleAvatarClick = () => {
     if (perfil.fotoPerfil) {
@@ -42,9 +46,8 @@ export default function TarjetaPerfilHeader({
       </h1>
 
       <div className="flex flex-col items-center gap-4">
-        {/* BANNER DE ERROR */}
         {error && (
-          <div className="w-full max-w-md p-3 bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 rounded-xl text-xs border border-red-200 dark:border-red-900 text-center flex items-center justify-between gap-2 animate-in fade-in duration-200">
+          <div className="w-full max-w-md p-3 bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 rounded-xl text-xs border border-red-200 dark:border-red-900 text-center flex items-center justify-between gap-2">
             <span className="flex-1">{error}</span>
             <button
               onClick={() => setError(null)}
@@ -55,8 +58,8 @@ export default function TarjetaPerfilHeader({
           </div>
         )}
 
-        {/* SUBCOMPONENTE AVATAR */}
         <AvatarPerfilEditable
+          key={perfil.fotoPerfil || "no-foto"}
           fotoPerfil={perfil.fotoPerfil}
           nombre={perfil.nombre}
           esMiPerfil={esMiPerfil}
@@ -64,7 +67,6 @@ export default function TarjetaPerfilHeader({
           onFileSelect={handleFileChange}
         />
 
-        {/* SUBCOMPONENTE NOMBRE Y CORREO */}
         <PerfilNombreForm
           nombre={nombre}
           correo={perfil.correo}
