@@ -24,7 +24,6 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v5
 
-      # Formatear el usuario a minúsculas de forma dinámica para cumplir la regla de Docker
       - name: Preparar nombres de imágenes en minúsculas
         id: prep
         run: |
@@ -95,7 +94,7 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
 
-            # Crear el archivo .env permitiendo la expansión de secretos de GitHub
+            # Crear el archivo .env permitiendo la expansión de secretos
             cat <<EOF > .env
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
             DB_NAME="${{ secrets.DB_NAME }}"
@@ -121,20 +120,20 @@ jobs:
 
             chmod 600 .env
 
-            # Detectar el socket de Docker (Rootless o estándar)
-            if [ -S "/run/user/$(id -u)/docker.sock" ]; then
-              export DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock"
+            # Exportar socket explícito y variables de entorno Rootless
+            export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+            if [ -S "$XDG_RUNTIME_DIR/docker.sock" ]; then
+              export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
             elif [ -S "$HOME/.docker/run/docker.sock" ]; then
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
 
-            # Iniciar sesión en el registro para descargar las imágenes creadas
+            # Iniciar sesión en GHCR con el host rootless configurado
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Descargar imágenes y reiniciar contenedores rápidamente
+            # Actualización progresiva (Zero downtime / Sin 'docker compose down')
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Limpiar imágenes antiguas
+            # Limpieza de imágenes sin romper el demonio
             docker image prune -f
