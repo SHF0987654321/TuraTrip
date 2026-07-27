@@ -116,6 +116,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- H2 para desarrollo local cuando no se provee DB_URL -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Flyway -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
