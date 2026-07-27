@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary:      hsl(174 72% 40%);
+  --color-primary-soft: hsl(174 60% 88%);
+  --color-accent:       hsl(38 95% 55%);
+  --color-bg:           hsl(0 0% 98%);
+  --color-surface:      hsl(0 0% 100%);
+  --color-border:       hsl(174 20% 88%);
+  --color-text:         hsl(210 20% 12%);
+  --color-muted:        hsl(210 10% 52%);
+
+  --font-display: "Syne", sans-serif;
+  --font-body:    "DM Sans", sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+}

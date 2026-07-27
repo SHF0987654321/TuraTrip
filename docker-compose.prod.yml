@@ -1,0 +1,103 @@
+services:
+  db:
+    image: mysql:9.7
+    container_name: turatrip-db-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 1G
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - turatrip-net-prod
+
+  backend:
+    image: ${IMAGE_BACKEND}
+    container_name: turatrip-backend-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:8080"
+    volumes:
+      - uploads_data_prod:${UPLOADS_DIR}
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DRIVER: ${DB_DRIVER}
+      HIBERNATE_DIALECT: ${HIBERNATE_DIALECT}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      JPA_DDL_AUTO: validate
+      PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      UPLOADS_DIR: ${UPLOADS_DIR}
+      API_URL: ${API_URL}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE}
+      LOGGING_LEVEL_ROOT: "INFO"
+    networks:
+      - turatrip-net-prod
+
+  frontend:
+    image: ${IMAGE_FRONTEND}
+    container_name: turatrip-frontend-prod
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL}
+      - INTERNAL_BACKEND_URL=http://backend:8080
+    ports:
+      - "127.0.0.1:8087:3000"
+    networks:
+      - turatrip-net-prod
+
+volumes:
+  mysql_data_prod:
+  uploads_data_prod:
+
+networks:
+  turatrip-net-prod:
+    driver: bridge

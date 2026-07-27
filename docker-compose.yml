@@ -1,0 +1,83 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: turatrip-db-dev
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - turatrip-net-dev
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: turatrip-backend-dev
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads_data_dev:/app/uploads
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DRIVER: ${DB_DRIVER}
+      HIBERNATE_DIALECT: ${HIBERNATE_DIALECT}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO}
+      PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      UPLOADS_DIR: ${UPLOADS_DIR}
+      API_URL: ${API_URL}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE}
+      LOGGING_LEVEL_ROOT: "DEBUG"
+    networks:
+      - turatrip-net-dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${API_URL}
+        - INTERNAL_BACKEND_URL=http://backend:8080
+    container_name: turatrip-frontend-dev
+    restart: "no"
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL}
+      - INTERNAL_BACKEND_URL=http://backend:8080
+    ports:
+      - "3000:3000"
+    networks:
+      - turatrip-net-dev
+
+volumes:
+  mysql_data_dev:
+  uploads_data_dev:
+
+networks:
+  turatrip-net-dev:
+    driver: bridge
