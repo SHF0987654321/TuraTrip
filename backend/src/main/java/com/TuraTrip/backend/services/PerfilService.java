@@ -7,6 +7,8 @@ public interface PerfilService {
 
     PerfilResponse obtenerPerfil(String correo);
 
+    PerfilResponse obtenerPerfilPorId(Long id);
+
     PerfilResponse editarPerfil(
         String correo,
         EditarPerfilRequest request

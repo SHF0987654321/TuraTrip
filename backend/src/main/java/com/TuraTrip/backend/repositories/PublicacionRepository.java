@@ -1,14 +1,14 @@
 package com.TuraTrip.backend.repositories;
 
-import java.util.List;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.TuraTrip.backend.models.Publicacion;
 import com.TuraTrip.backend.models.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PublicacionRepository extends JpaRepository<Publicacion, Long> {
-    List<Publicacion> findAllByUsuarioOrderByFechaCreacionDesc(Usuario usuario);
 
-    List<Publicacion> findAllByOrderByFechaCreacionDesc();
+    Page<Publicacion> findAllByUsuarioId(Long usuarioId, Pageable pageable);
+
+    Page<Publicacion> findAllByUsuario(Usuario usuario, Pageable pageable);
 }

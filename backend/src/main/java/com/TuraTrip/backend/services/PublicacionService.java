@@ -1,21 +1,16 @@
 package com.TuraTrip.backend.services;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.TuraTrip.backend.dtos.request.PublicacionRequest;
 import com.TuraTrip.backend.dtos.response.PublicacionResponse;
 
 public interface PublicacionService {
-
     PublicacionResponse crearPublicacion(String correo, PublicacionRequest request, MultipartFile archivo);
-
-    List<PublicacionResponse> obtenerPublicacionesPorUsuario(String correo);
-
-    List<PublicacionResponse> obtenerTodasLasPublicaciones();
-
+    Page<PublicacionResponse> obtenerTodasLasPublicaciones(int page, int size);
     PublicacionResponse obtenerPublicacionPorId(Long id);
-
+    Page<PublicacionResponse> obtenerPublicacionesPorUsuarioId(Long usuarioId, int page, int size);
+    Page<PublicacionResponse> obtenerPublicacionesPorCorreoUsuario(String correo, int page, int size);
     void eliminarPublicacion(Long id, String correoUsuario);
 }

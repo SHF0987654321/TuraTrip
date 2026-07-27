@@ -1,32 +1,32 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
-const api = axios.create({
+const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
-api.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  if (!(config.data instanceof FormData)) {
-    if (!config.headers.has("Content-Type")) {
-      config.headers.set("Content-Type", "application/json");
-    }
+  if (
+    !(config.data instanceof FormData) &&
+    !config.headers.has("Content-Type")
+  ) {
+    config.headers.set("Content-Type", "application/json");
   }
   return config;
 });
 
-api.interceptors.response.use(
+apiClient.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().setAuth(null, null);
-      localStorage.removeItem("token");
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }
 );
 
-export default api;
+export default apiClient;

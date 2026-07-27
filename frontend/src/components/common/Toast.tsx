@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 interface ToastProps {
   mostrar: boolean;
@@ -20,21 +20,15 @@ export default function Toast({
   duracionMs = 4000,
   accion,
 }: ToastProps) {
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
   useEffect(() => {
     if (!mostrar) return;
 
     const timer = setTimeout(() => {
-      onCloseRef.current();
+      onClose();
     }, duracionMs);
 
     return () => clearTimeout(timer);
-  }, [mostrar, duracionMs]);
+  }, [mostrar, duracionMs, onClose]);
 
   if (!mostrar) return null;
 
@@ -45,6 +39,7 @@ export default function Toast({
       <div className="flex items-center gap-2">
         {accion && (
           <button
+            type="button"
             onClick={() => {
               onClose();
               accion.onClick();

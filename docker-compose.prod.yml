@@ -6,17 +6,27 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 512M
+          cpus: "0.50"
+          memory: 1G
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: turatrip_db
+      MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data_prod:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,14 +39,10 @@ services:
       dockerfile: Dockerfile
     container_name: turatrip-backend-prod
     restart: unless-stopped
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
     depends_on:
       db:
@@ -44,9 +50,9 @@ services:
     ports:
       - "127.0.0.1:8088:8080"
     volumes:
-          - uploads_data_prod:${UPLOADS_DIR}
+      - uploads_data_prod:${UPLOADS_DIR}
     environment:
-      DB_URL: jdbc:mysql://db:3306/turatrip_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -72,22 +78,22 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=${API_URL}
+        - INTERNAL_BACKEND_URL=http://backend:8080
     container_name: turatrip-frontend-prod
     restart: unless-stopped
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     read_only: true
     tmpfs:
       - /tmp
     deploy:
       resources:
         limits:
-          cpus: '0.50'
+          cpus: "0.50"
           memory: 512M
     depends_on:
       - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL}
+      - INTERNAL_BACKEND_URL=http://backend:8080
     ports:
       - "127.0.0.1:8087:3000"
     networks:

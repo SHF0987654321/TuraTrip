@@ -1,10 +1,12 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import api from "@/lib/api";
+import { publicacionService } from "@/services/publicacionService";
 import { Publicacion } from "@/types/publicacion";
 import TarjetaPublicacion from "@/components/publicaciones/TarjetaPublicacion";
+import ModalImagenExpandida from "@/components/common/ModalImagenExpandida";
 import { useAuthStore } from "@/store/authStore";
 
 export default function DetallePublicacionPage() {
@@ -17,13 +19,17 @@ export default function DetallePublicacionPage() {
   const [imagenExpandida, setImagenExpandida] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      api
-        .get(`/api/v1/publicaciones/${id}`)
-        .then((res) => setPublicacion(res.data))
-        .catch((err) => console.error("Error al cargar la publicación:", err))
-        .finally(() => setLoading(false));
-    }
+    if (!id) return;
+
+    setLoading(true);
+    publicacionService
+      .getPorId(id as string)
+      .then((data) => setPublicacion(data))
+      .catch((err) => {
+        console.error("Error al cargar la publicación:", err);
+        setPublicacion(null);
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleDeleteSuccess = () => {
@@ -32,7 +38,7 @@ export default function DetallePublicacionPage() {
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400 font-medium">
         Cargando publicación...
       </div>
     );
@@ -41,54 +47,41 @@ export default function DetallePublicacionPage() {
   if (!publicacion) {
     return (
       <div className="text-center py-12 space-y-4">
-        <p className="text-gray-400">La publicación no existe o fue eliminada.</p>
-        <Link href="/" className="text-[hsl(174_72%_40%)] font-semibold hover:underline">
-          Volver al inicio
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
+          La publicación no existe o fue eliminada.
+        </p>
+        <Link
+          href="/"
+          className="text-[hsl(174_72%_40%)] font-semibold hover:underline text-sm inline-block"
+        >
+          Volver al feed principal
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 py-6 px-4">
-      {/* Botón Volver dinámico */}
+    <div className="max-w-xl mx-auto space-y-6">
       <button
+        type="button"
         onClick={() => router.back()}
-        className="text-sm text-gray-400 hover:text-white transition inline-flex items-center gap-1 font-medium cursor-pointer"
+        className="text-sm text-gray-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition inline-flex items-center gap-1 font-medium cursor-pointer"
       >
         ← Volver
       </button>
 
-      {/* Tarjeta Reutilizable pasando directamente usuario?.roles */}
       <TarjetaPublicacion
         publicacion={publicacion}
         onExpandImage={setImagenExpandida}
-        usuarioActualCorreo={usuario?.correo}
+        usuarioActualId={usuario?.id}
         usuarioRoles={usuario?.roles}
         onDeleteSuccess={handleDeleteSuccess}
       />
 
-      {/* Modal para ampliar imagen */}
-      {imagenExpandida && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer"
-          onClick={() => setImagenExpandida(null)}
-        >
-          <div className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center">
-            <img
-              src={imagenExpandida}
-              alt="Ampliada"
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-            <button
-              className="absolute top-4 right-4 bg-white/25 text-white rounded-full p-2 hover:bg-white/40 transition"
-              onClick={() => setImagenExpandida(null)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+      <ModalImagenExpandida
+        imagenUrl={imagenExpandida}
+        onClose={() => setImagenExpandida(null)}
+      />
     </div>
   );
 }

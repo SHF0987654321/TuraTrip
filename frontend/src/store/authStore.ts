@@ -1,13 +1,15 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { Usuario } from "@/types/usuario";
 
 interface AuthState {
   token: string | null;
   usuario: Usuario | null;
+  isHydrated: boolean;
   setAuth: (token: string | null, usuario: Usuario | null) => void;
   actualizarUsuario: (nuevosDatos: Partial<Usuario>) => void;
   logout: () => void;
+  setHydrated: (hydrated: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -15,20 +17,35 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       token: null,
       usuario: null,
+      isHydrated: false,
+
       setAuth: (token, usuario) => set({ token, usuario }),
-      // Actualiza parcialmente el usuario sin perder los demás datos
+
       actualizarUsuario: (nuevosDatos) =>
         set((state) => ({
           usuario: state.usuario ? { ...state.usuario, ...nuevosDatos } : null,
         })),
+
       logout: () => {
-        // Borra la cookie físicamente para que el middleware detecte la salida
         if (typeof document !== "undefined") {
-          document.cookie = "token=; path=/; max-age=0";
+          document.cookie =
+            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
         }
         set({ token: null, usuario: null });
       },
+
+      setHydrated: (isHydrated) => set({ isHydrated }),
     }),
-    { name: "auth-storage" }
+    {
+      name: "auth-storage",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        token: state.token,
+        usuario: state.usuario,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated(true);
+      },
+    }
   )
 );

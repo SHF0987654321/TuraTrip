@@ -1,50 +1,74 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import api from "@/lib/api";
-import { Perfil } from "@/types/usuario";
-import { Publicacion } from "@/types/publicacion";
-import { useAuthStore } from "@/store/authStore";
 
-export function usePerfilVista(correoObjetivo?: string) {
+import { useState, useEffect, useCallback } from "react";
+import { Perfil } from "@/types/usuario";
+import { Publicacion, PageResponse } from "@/types/publicacion";
+import { useAuthStore } from "@/store/authStore";
+import { usuarioService } from "@/services/usuarioService";
+import { publicacionService } from "@/services/publicacionService";
+
+function determinarSiHayMas<T>(pageData: PageResponse<T>): boolean {
+  if (!pageData.content || pageData.content.length === 0) {
+    return false;
+  }
+  if (typeof pageData.last === "boolean") {
+    return !pageData.last;
+  }
+  return pageData.number + 1 < pageData.totalPages;
+}
+
+export function usePerfilVista(usuarioIdObjetivo?: string | number) {
   const { usuario: usuarioActual, actualizarUsuario } = useAuthStore();
 
   const esMiPerfil: boolean = Boolean(
-    !correoObjetivo ||
-      (usuarioActual?.correo &&
-        correoObjetivo &&
-        usuarioActual.correo.toLowerCase() === correoObjetivo.toLowerCase())
+    !usuarioIdObjetivo ||
+    (usuarioActual?.id &&
+      String(usuarioActual.id) === String(usuarioIdObjetivo))
   );
 
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imagenExpandida, setImagenExpandida] = useState<string | null>(null);
 
-  // 1. Carga inicial con estado 'loading'
+  // Carga inicial (Página 0)
   const cargarDatos = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(0);
 
     try {
       if (esMiPerfil) {
         const [resPerfil, resPublicaciones] = await Promise.all([
-          api.get("/api/v1/usuarios/perfil"),
-          api.get("/api/v1/publicaciones/mias"),
+          usuarioService.getPerfil(),
+          publicacionService.getMisPublicaciones(0, 10),
         ]);
-        setPerfil(resPerfil.data);
-        setPublicaciones(resPublicaciones.data);
+
+        setPerfil(resPerfil);
+        setPublicaciones(resPublicaciones.content || []);
+        setHasMore(determinarSiHayMas(resPublicaciones));
+
         actualizarUsuario({
-          nombre: resPerfil.data.nombre,
-          fotoPerfil: resPerfil.data.fotoPerfil,
+          nombre: resPerfil.nombre,
+          fotoPerfil: resPerfil.fotoPerfil,
         });
-      } else if (correoObjetivo) {
+      } else if (usuarioIdObjetivo) {
         const [resPerfil, resPublicaciones] = await Promise.all([
-          api.get(`/api/v1/usuarios/perfil/${encodeURIComponent(correoObjetivo)}`),
-          api.get(`/api/v1/publicaciones/usuario/${encodeURIComponent(correoObjetivo)}`),
+          usuarioService.getPerfilPorId(usuarioIdObjetivo),
+          publicacionService.getPublicacionesPorUsuario(
+            usuarioIdObjetivo,
+            0,
+            10
+          ),
         ]);
-        setPerfil(resPerfil.data);
-        setPublicaciones(resPublicaciones.data);
+
+        setPerfil(resPerfil);
+        setPublicaciones(resPublicaciones.content || []);
+        setHasMore(determinarSiHayMas(resPublicaciones));
       }
     } catch (err: any) {
       console.error("Error al cargar perfil:", err);
@@ -56,17 +80,53 @@ export function usePerfilVista(correoObjetivo?: string) {
     } finally {
       setLoading(false);
     }
-  }, [esMiPerfil, correoObjetivo, actualizarUsuario]);
+  }, [esMiPerfil, usuarioIdObjetivo, actualizarUsuario]);
 
-  // 2. Refetch silencioso: trae las publicaciones nuevas sin activar el spinner 'loading'
+  // Carga de las siguientes páginas para Scroll Infinito
+  const fetchNextPage = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    try {
+      let pageData: PageResponse<Publicacion>;
+
+      if (esMiPerfil) {
+        pageData = await publicacionService.getMisPublicaciones(nextPage, 10);
+      } else if (usuarioIdObjetivo) {
+        pageData = await publicacionService.getPublicacionesPorUsuario(
+          usuarioIdObjetivo,
+          nextPage,
+          10
+        );
+      } else {
+        return;
+      }
+
+      setPublicaciones((prev) => [...prev, ...(pageData.content || [])]);
+      setPage(nextPage);
+      setHasMore(determinarSiHayMas(pageData));
+    } catch (err) {
+      console.error("Error al cargar más publicaciones del perfil:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [esMiPerfil, usuarioIdObjetivo, page, loadingMore, hasMore]);
+
   const revalidarPublicaciones = useCallback(async () => {
     try {
       if (esMiPerfil) {
-        const resPublicaciones = await api.get("/api/v1/publicaciones/mias");
-        setPublicaciones(resPublicaciones.data);
+        const resPublicaciones = await publicacionService.getMisPublicaciones(
+          0,
+          10
+        );
+        setPublicaciones(resPublicaciones.content || []);
+        setPage(0);
+        setHasMore(determinarSiHayMas(resPublicaciones));
       }
     } catch (err) {
-      console.error("Error al actualizar publicaciones del perfil:", err);
+      console.error("Error al revalidar publicaciones:", err);
     }
   }, [esMiPerfil]);
 
@@ -74,7 +134,6 @@ export function usePerfilVista(correoObjetivo?: string) {
     cargarDatos();
   }, [cargarDatos]);
 
-  // 3. Listener del evento 'postCreado'
   useEffect(() => {
     if (esMiPerfil) {
       const handlePostCreado = () => revalidarPublicaciones();
@@ -87,11 +146,11 @@ export function usePerfilVista(correoObjetivo?: string) {
     setPublicaciones((prev) => prev.filter((p) => p.id !== idEliminado));
   };
 
-  const handlePerfilActualizado = (nuevoPerfil: Perfil, nuevaFotoConCache?: string) => {
+  const handlePerfilActualizado = (nuevoPerfil: Perfil) => {
     setPerfil(nuevoPerfil);
     actualizarUsuario({
       nombre: nuevoPerfil.nombre,
-      fotoPerfil: nuevaFotoConCache || nuevoPerfil.fotoPerfil,
+      fotoPerfil: nuevoPerfil.fotoPerfil,
     });
   };
 
@@ -99,6 +158,8 @@ export function usePerfilVista(correoObjetivo?: string) {
     perfil,
     publicaciones,
     loading,
+    loadingMore,
+    hasMore,
     error,
     esMiPerfil,
     usuarioActual,
@@ -106,5 +167,6 @@ export function usePerfilVista(correoObjetivo?: string) {
     setImagenExpandida,
     handleDeleteSuccess,
     handlePerfilActualizado,
+    fetchNextPage,
   };
 }

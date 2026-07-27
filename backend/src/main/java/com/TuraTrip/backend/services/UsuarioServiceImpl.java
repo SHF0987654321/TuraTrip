@@ -30,9 +30,10 @@ import com.TuraTrip.backend.repositories.RolRepository;
 import com.TuraTrip.backend.repositories.TokenRepository;
 import com.TuraTrip.backend.repositories.UsuarioRepository;
 
-
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
@@ -65,24 +66,14 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
-        // Lógica de token de verificación
-        String tokenStr = UUID.randomUUID().toString();
-        Token tokenVerificacion = Token.builder()
-            .token(tokenStr)
-            .usuario(usuarioGuardado)
-            .tipo(TipoToken.VERIFICACION)
-            .fechaExpiracion(LocalDateTime.now().plusHours(24))
-            .usado(false)
-            .build();
-
-        tokenRepository.save(tokenVerificacion);
-        emailService.enviarCorreoVerificacion(usuarioGuardado.getCorreo(), usuarioGuardado.getNombre(), tokenStr);
+        // Generamos el primer token de verificación
+        crearYEnviarTokenVerificacion(usuarioGuardado);
 
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
 
         // 1. Buscamos el usuario por correo
@@ -94,12 +85,17 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new BadCredentialsException("Correo o contraseña incorrectos.");
         }
 
-        // 3. AHORA verificamos si está habilitado (Si llega aquí, la clave es correcta)
+        // 3. Verificamos si la cuenta no está activada
         if (!usuario.getHabilitado()) {
-            throw new CuentaInhabilitadaException("Tu cuenta no ha sido activada. Por favor, revisa tu correo.");
+            // Reenviamos o generamos el token de verificación automáticamente
+            gestionarReenvioTokenVerificacion(usuario);
+
+            throw new CuentaInhabilitadaException(
+                "Tu cuenta no ha sido activada. Se ha enviado un nuevo enlace de verificación a tu correo."
+            );
         }
 
-        // 4. Si todo está bien, generamos el token
+        // 4. Si todo está bien, generamos el JWT token
         String token = jwtUtils.generateToken(usuario);
         return new AuthResponse(token, usuarioMapper.toResponse(usuario));
     }
@@ -166,19 +162,32 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new CuentaYaVerificadaException("La cuenta ya está activa.");
         }
 
-        // Buscamos si existe un token previo NO USADO
+        gestionarReenvioTokenVerificacion(usuario);
+    }
+
+    private void gestionarReenvioTokenVerificacion(Usuario usuario) {
         Optional<Token> tokenExistente = tokenRepository.findByUsuarioAndTipoAndUsadoFalse(usuario, TipoToken.VERIFICACION);
 
         if (tokenExistente.isPresent()) {
             Token token = tokenExistente.get();
-            // Si no ha expirado, reutilizamos o informamos
-            if (token.getFechaExpiracion().isAfter(LocalDateTime.now())) {
+
+            if (!token.estaExpirado()) {
+                // Sigue vigente -> Reenviamos el correo con el token actual
+                log.info("📧 Reenviando token de verificación vigente para el usuario: {}", usuario.getCorreo());
                 emailService.enviarCorreoVerificacion(usuario.getCorreo(), usuario.getNombre(), token.getToken());
-                return; // Salimos sin crear nada nuevo
+                return;
             }
+
+            // Si ya expiró -> Lo marcamos como usado para inutilizarlo limpiamente
+            token.setUsado(true);
+            tokenRepository.save(token);
         }
 
-        // Si no había token o estaba expirado, creamos uno nuevo
+        // Si no existía o expiró -> Generamos uno totalmente nuevo
+        crearYEnviarTokenVerificacion(usuario);
+    }
+
+    private void crearYEnviarTokenVerificacion(Usuario usuario) {
         String tokenStr = UUID.randomUUID().toString();
         Token nuevoToken = Token.builder()
             .token(tokenStr)

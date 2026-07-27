@@ -24,11 +24,11 @@ public class PerfilController {
         return ResponseEntity.ok(perfil);
     }
 
-    @GetMapping("/perfil/{correo}")
-    public ResponseEntity<PerfilResponse> obtenerPerfilPorCorreo(
-            @PathVariable String correo) {
+    @GetMapping("/perfil/{id}")
+    public ResponseEntity<PerfilResponse> obtenerPerfilPorId(
+            @PathVariable Long id) {
 
-        PerfilResponse perfil = perfilService.obtenerPerfil(correo);
+        PerfilResponse perfil = perfilService.obtenerPerfilPorId(id);
         return ResponseEntity.ok(perfil);
     }
 

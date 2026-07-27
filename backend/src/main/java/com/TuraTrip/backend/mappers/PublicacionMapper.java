@@ -10,8 +10,8 @@ import org.mapstruct.Mapping;
 public interface PublicacionMapper {
 
     @Mapping(source = "usuario.nombre", target = "autorNombre")
-    @Mapping(source = "usuario.correo", target = "autorCorreo")
-    @Mapping(target = "autorFotoPerfil", expression = "java(storageService.construirUrlPublica(publicacion.getUsuario().getFotoPerfil()))")
+    @Mapping(source = "usuario.id", target = "autorId")
+@Mapping(target = "autorFotoPerfil", expression = "java(publicacion.getUsuario() != null && publicacion.getUsuario().getFotoPerfil() != null ? storageService.construirUrlPublica(publicacion.getUsuario().getFotoPerfil()) : null)")
     @Mapping(target = "imagen", expression = "java(storageService.construirUrlPublica(publicacion.getImagen()))")
     PublicacionResponse toResponse(Publicacion publicacion);
 }

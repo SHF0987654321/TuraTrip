@@ -41,7 +41,7 @@ jobs:
             cd /var/www/seminario1/turatrip
 
             # Usamos 'EOF' (con comillas simples) para desactivar toda interpretación de variables
-            cat <<'EOF' > .env
+            cat <<EOF > .env
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
             DB_USERNAME="${{ secrets.DB_USERNAME }}"
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}"

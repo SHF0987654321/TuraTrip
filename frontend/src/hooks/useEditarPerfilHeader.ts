@@ -1,13 +1,14 @@
 "use client";
+
 import { useState } from "react";
 import { Perfil } from "@/types/usuario";
-import api from "@/lib/api";
+import { usuarioService } from "@/services/usuarioService";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 interface UseEditarPerfilHeaderProps {
   perfil: Perfil;
-  onPerfilActualizado: (nuevoPerfil: Perfil, nuevaFotoConCache?: string) => void;
+  onPerfilActualizado: (nuevoPerfil: Perfil) => void;
 }
 
 export function useEditarPerfilHeader({
@@ -26,8 +27,8 @@ export function useEditarPerfilHeader({
 
     try {
       setError(null);
-      const res = await api.put("/api/v1/usuarios/perfil", { nombre });
-      onPerfilActualizado(res.data);
+      const perfilActualizado = await usuarioService.actualizarNombre(nombre);
+      onPerfilActualizado(perfilActualizado);
       setIsEditing(false);
     } catch (err) {
       console.error("Error al guardar el nombre:", err);
@@ -40,33 +41,32 @@ export function useEditarPerfilHeader({
     if (!file) return;
 
     if (file.size > MAX_SIZE_BYTES) {
-      setError("La imagen excede el tamaño máximo permitido (5 MB). Selecciona una más liviana.");
+      setError(
+        "La imagen excede el tamaño máximo permitido (5 MB). Selecciona una más liviana."
+      );
       e.target.value = "";
       return;
     }
 
     setError(null);
-    const formData = new FormData();
-    formData.append("archivo", file);
 
     try {
-      const res = await api.post("/api/v1/usuarios/perfil/foto", formData);
-
-      const nuevaFotoUrl = res.data.fotoPerfil || res.data;
-      const fotoConCache = `${nuevaFotoUrl}?t=${Date.now()}`;
+      const res = await usuarioService.actualizarFoto(file);
+      const nuevaFotoUrl = res.fotoPerfil;
 
       const perfilActualizado: Perfil = {
         ...perfil,
         fotoPerfil: nuevaFotoUrl,
       };
 
-      onPerfilActualizado(perfilActualizado, fotoConCache);
+      onPerfilActualizado(perfilActualizado);
     } catch (err: any) {
       console.error("Error al subir foto:", err);
 
       let mensajeError = "No se pudo actualizar la foto de perfil.";
       if (err.response?.status === 413) {
-        mensajeError = "La imagen es demasiado grande. El límite máximo es de 5 MB.";
+        mensajeError =
+          "La imagen es demasiado grande. El límite máximo es de 5 MB.";
       } else if (err.response?.data?.error) {
         mensajeError = err.response.data.error;
       } else if (err.response?.data?.message) {

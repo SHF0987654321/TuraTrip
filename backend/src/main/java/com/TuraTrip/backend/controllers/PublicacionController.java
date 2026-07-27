@@ -6,8 +6,7 @@ import com.TuraTrip.backend.services.PublicacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +22,11 @@ public class PublicacionController {
     private final PublicacionService publicacionService;
 
     @GetMapping
-    public ResponseEntity<List<PublicacionResponse>> obtenerTodasLasPublicaciones() {
-        List<PublicacionResponse> publicaciones = publicacionService.obtenerTodasLasPublicaciones();
+    public ResponseEntity<Page<PublicacionResponse>> obtenerTodasLasPublicaciones(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<PublicacionResponse> publicaciones = publicacionService.obtenerTodasLasPublicaciones(page, size);
         return ResponseEntity.ok(publicaciones);
     }
 
@@ -40,27 +42,29 @@ public class PublicacionController {
             @Valid @RequestPart("publicacion") PublicacionRequest request,
             @RequestPart("archivo") MultipartFile archivo
     ) {
-        // Obtenemos el correo del usuario autenticado a través del token JWT en el contexto de seguridad
         String correoUsuario = authentication.getName();
-
         PublicacionResponse nuevaPublicacion = publicacionService.crearPublicacion(correoUsuario, request, archivo);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaPublicacion);
     }
 
     @GetMapping("/mias")
-    public ResponseEntity<List<PublicacionResponse>> obtenerMisPublicaciones(Authentication authentication) {
+    public ResponseEntity<Page<PublicacionResponse>> obtenerMisPublicaciones(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         String correoUsuario = authentication.getName();
-
-        List<PublicacionResponse> misPublicaciones = publicacionService.obtenerPublicacionesPorUsuario(correoUsuario);
-
+        Page<PublicacionResponse> misPublicaciones = publicacionService.obtenerPublicacionesPorCorreoUsuario(correoUsuario, page, size);
         return ResponseEntity.ok(misPublicaciones);
     }
 
-    @GetMapping("/usuario/{correo}")
-    public ResponseEntity<List<PublicacionResponse>> obtenerPublicacionesPorUsuario(
-            @PathVariable String correo) {
-        List<PublicacionResponse> publicaciones = publicacionService.obtenerPublicacionesPorUsuario(correo);
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<Page<PublicacionResponse>> obtenerPublicacionesPorUsuarioId(
+            @PathVariable Long usuarioId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<PublicacionResponse> publicaciones = publicacionService.obtenerPublicacionesPorUsuarioId(usuarioId, page, size);
         return ResponseEntity.ok(publicaciones);
     }
 
@@ -71,7 +75,6 @@ public class PublicacionController {
     ) {
         String correoUsuario = authentication.getName();
         publicacionService.eliminarPublicacion(id, correoUsuario);
-
         return ResponseEntity.noContent().build();
     }
 }

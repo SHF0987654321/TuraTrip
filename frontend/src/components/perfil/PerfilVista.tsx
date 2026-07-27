@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import FeedPublicaciones from "@/components/publicaciones/FeedPublicaciones";
 import TarjetaPerfilHeader from "./TarjetaPerfilHeader";
@@ -6,15 +7,17 @@ import ModalImagenExpandida from "@/components/common/ModalImagenExpandida";
 import { usePerfilVista } from "@/hooks/usePerfilVista";
 
 interface PerfilVistaProps {
-  correoObjetivo?: string;
+  usuarioIdObjetivo?: number;
 }
 
-export default function PerfilVista({ correoObjetivo }: PerfilVistaProps) {
+export default function PerfilVista({ usuarioIdObjetivo }: PerfilVistaProps) {
   const router = useRouter();
   const {
     perfil,
     publicaciones,
     loading,
+    loadingMore,
+    hasMore,
     error,
     esMiPerfil,
     usuarioActual,
@@ -22,11 +25,12 @@ export default function PerfilVista({ correoObjetivo }: PerfilVistaProps) {
     setImagenExpandida,
     handleDeleteSuccess,
     handlePerfilActualizado,
-  } = usePerfilVista(correoObjetivo);
+    fetchNextPage,
+  } = usePerfilVista(usuarioIdObjetivo);
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400 font-medium animate-pulse">
         Cargando perfil...
       </div>
     );
@@ -71,7 +75,9 @@ export default function PerfilVista({ correoObjetivo }: PerfilVistaProps) {
       {/* SECCIÓN DE PUBLICACIONES */}
       <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800">
         <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">
-          {esMiPerfil ? "Mis Publicaciones" : `Publicaciones de ${perfil.nombre}`}
+          {esMiPerfil
+            ? "Mis Publicaciones"
+            : `Publicaciones de ${perfil.nombre}`}
         </h2>
 
         <FeedPublicaciones
@@ -82,9 +88,12 @@ export default function PerfilVista({ correoObjetivo }: PerfilVistaProps) {
               ? "Aún no has compartido ningún lugar en Buenaventura. ¡Anímate a publicar uno!"
               : "Este usuario aún no ha compartido ninguna publicación en Buenaventura."
           }
-          usuarioActualCorreo={usuarioActual?.correo}
+          usuarioActualId={usuarioActual?.id}
           usuarioRoles={usuarioActual?.roles}
           onDeleteSuccess={handleDeleteSuccess}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={fetchNextPage}
         />
       </div>
 

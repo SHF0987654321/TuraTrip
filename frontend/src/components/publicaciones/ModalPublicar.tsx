@@ -1,4 +1,5 @@
 "use client";
+
 import { useModalPublicar } from "@/hooks/useModalPublicar";
 
 interface ModalPublicarProps {
@@ -7,7 +8,11 @@ interface ModalPublicarProps {
   onSuccess: (idPublicacion: number) => void;
 }
 
-export default function ModalPublicar({ isOpen, onClose, onSuccess }: ModalPublicarProps) {
+export default function ModalPublicar({
+  isOpen,
+  onClose,
+  onSuccess,
+}: ModalPublicarProps) {
   const {
     titulo,
     setTitulo,
@@ -28,6 +33,7 @@ export default function ModalPublicar({ isOpen, onClose, onSuccess }: ModalPubli
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full cursor-pointer transition-colors"
+          aria-label="Cerrar modal"
         >
           ✕
         </button>
