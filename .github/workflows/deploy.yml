@@ -131,9 +131,23 @@ jobs:
             # Iniciar sesión en GHCR con el host rootless configurado
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Actualización progresiva (Zero downtime / Sin 'docker compose down')
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # 1. Reiniciar servicio rootless por SSH para destrabar sockets bloqueados
+            systemctl --user restart docker || true
+            sleep 3
+
+            # 2. Forzar remoción del contenedor de DB si quedó zombi
+            CONTAINER_ID=$(docker ps -a -q --filter "name=-db-prod" 2>/dev/null || true)
+            if [ ! -z "$CONTAINER_ID" ]; then
+              docker kill $CONTAINER_ID || true
+              docker rm -f $CONTAINER_ID || true
+            fi
+
+            # 3. Limpiar estado de red/compose de forma segura
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+
+            # 4. Descargar imágenes y desplegar solo backend y frontend
+            docker compose -f docker-compose.prod.yml pull backend frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
 
             # Limpieza de imágenes sin romper el demonio
             docker image prune -f
