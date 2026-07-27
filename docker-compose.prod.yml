@@ -34,9 +34,7 @@ services:
       - turatrip-net-prod
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${IMAGE_BACKEND}
     container_name: turatrip-backend-prod
     restart: unless-stopped
     deploy:
@@ -73,12 +71,7 @@ services:
       - turatrip-net-prod
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${API_URL}
-        - INTERNAL_BACKEND_URL=http://backend:8080
+    image: ${IMAGE_FRONTEND}
     container_name: turatrip-frontend-prod
     restart: unless-stopped
     read_only: true
