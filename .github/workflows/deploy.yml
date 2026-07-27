@@ -94,28 +94,28 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
 
-            # 'EOF' con comillas simples evita la expansión de caracteres especiales en contraseñas complejas
-            cat <<'EOF' > .env
-            DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
-            DB_URL="${{ secrets.DB_URL }}"
-            DB_USERNAME="${{ secrets.DB_USERNAME }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_DRIVER="${{ secrets.DB_DRIVER }}"
-            HIBERNATE_DIALECT="${{ secrets.HIBERNATE_DIALECT }}"
-            JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            JWT_EXPIRATION_MS="${{ secrets.JWT_EXPIRATION_MS }}"
-            API_URL="${{ secrets.API_URL }}"
-            FRONTEND_URL="${{ secrets.FRONTEND_URL }}"
-            SMTP_HOST="${{ secrets.SMTP_HOST }}"
-            SMTP_PORT="${{ secrets.SMTP_PORT }}"
-            SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
-            SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
-            UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
-            MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
-            MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
-            IMAGE_BACKEND="${{ needs.build-and-push.outputs.image_backend }}"
-            IMAGE_FRONTEND="${{ needs.build-and-push.outputs.image_frontend }}"
+            # Comillas simples alrededor de las variables para que el signo $ no sea interpretado por Bash
+            cat <<EOF > .env
+            DB_ROOT_PASSWORD='${{ secrets.DB_ROOT_PASSWORD }}'
+            DB_NAME='${{ secrets.DB_NAME }}'
+            DB_URL='${{ secrets.DB_URL }}'
+            DB_USERNAME='${{ secrets.DB_USERNAME }}'
+            DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+            DB_DRIVER='${{ secrets.DB_DRIVER }}'
+            HIBERNATE_DIALECT='${{ secrets.HIBERNATE_DIALECT }}'
+            JWT_SECRET='${{ secrets.JWT_SECRET }}'
+            JWT_EXPIRATION_MS='${{ secrets.JWT_EXPIRATION_MS }}'
+            API_URL='${{ secrets.API_URL }}'
+            FRONTEND_URL='${{ secrets.FRONTEND_URL }}'
+            SMTP_HOST='${{ secrets.SMTP_HOST }}'
+            SMTP_PORT='${{ secrets.SMTP_PORT }}'
+            SMTP_USERNAME='${{ secrets.SMTP_USERNAME }}'
+            SMTP_PASSWORD='${{ secrets.SMTP_PASSWORD }}'
+            UPLOADS_DIR='${{ secrets.UPLOADS_DIR }}'
+            MAX_FILE_SIZE='${{ secrets.MAX_FILE_SIZE }}'
+            MAX_REQUEST_SIZE='${{ secrets.MAX_REQUEST_SIZE }}'
+            IMAGE_BACKEND='${{ needs.build-and-push.outputs.image_backend }}'
+            IMAGE_FRONTEND='${{ needs.build-and-push.outputs.image_frontend }}'
             EOF
 
             chmod 600 .env
