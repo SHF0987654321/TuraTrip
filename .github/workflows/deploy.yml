@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout del código
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Preparar nombres de imágenes en minúsculas
         id: prep
@@ -33,28 +33,17 @@ jobs:
           echo "image_frontend=ghcr.io/${OWNER}/turatrip-frontend:latest" >> $GITHUB_OUTPUT
 
       - name: Iniciar sesión en GitHub Container Registry
-<<<<<<< HEAD
-        uses: docker/login-action@v4
-=======
         uses: docker/login-action@v3
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configurar Docker Buildx
-<<<<<<< HEAD
-        uses: docker/setup-buildx-action@v4
-
-      - name: Compilar y publicar imagen del Backend
-        uses: docker/build-push-action@v7
-=======
         uses: docker/setup-buildx-action@v3
 
       - name: Compilar y publicar imagen del Backend
         uses: docker/build-push-action@v6
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -64,11 +53,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Compilar y publicar imagen del Frontend
-<<<<<<< HEAD
-        uses: docker/build-push-action@v7
-=======
         uses: docker/build-push-action@v6
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
@@ -89,11 +74,7 @@ jobs:
 
     steps:
       - name: Checkout del código
-<<<<<<< HEAD
-        uses: actions/checkout@v5
-=======
         uses: actions/checkout@v4
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
 
       - name: Copiar docker-compose al VPS vía SCP
         uses: appleboy/scp-action@v0.1.7
@@ -113,13 +94,8 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
 
-<<<<<<< HEAD
-            # Crear el archivo .env permitiendo la expansión de secretos
-            cat <<EOF > .env
-=======
-            # Usar 'EOF' para evitar que bash intente interpretar caracteres especiales ($) en contraseñas complejas
+            # 'EOF' con comillas simples evita la expansión de caracteres especiales en contraseñas complejas
             cat <<'EOF' > .env
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
             DB_NAME="${{ secrets.DB_NAME }}"
             DB_URL="${{ secrets.DB_URL }}"
@@ -144,7 +120,7 @@ jobs:
 
             chmod 600 .env
 
-            # Exportar socket explícito y variables de entorno Rootless
+            # Exportar socket explícito y variables de entorno para Docker Rootless
             export XDG_RUNTIME_DIR="/run/user/$(id -u)"
             if [ -S "$XDG_RUNTIME_DIR/docker.sock" ]; then
               export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
@@ -155,33 +131,11 @@ jobs:
             # Iniciar sesión en GHCR con el host rootless configurado
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-<<<<<<< HEAD
-            # 1. Reiniciar servicio rootless por SSH para destrabar sockets bloqueados
-            systemctl --user restart docker || true
-            sleep 3
-
-            # 2. Forzar remoción del contenedor de DB si quedó zombi
-            CONTAINER_ID=$(docker ps -a -q --filter "name=-db-prod" 2>/dev/null || true)
-            if [ ! -z "$CONTAINER_ID" ]; then
-              docker kill $CONTAINER_ID || true
-              docker rm -f $CONTAINER_ID || true
-            fi
-
-            # 3. Limpiar estado de red/compose de forma segura
-            docker compose -f docker-compose.prod.yml down --remove-orphans || true
-
-            # 4. Descargar imágenes y desplegar solo backend y frontend
-            docker compose -f docker-compose.prod.yml pull backend frontend
-            docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
-
-            # Limpieza de imágenes sin romper el demonio
-=======
-            # 1. Descargar las imágenes más recientes de GHCR
+            # 1. Descargar las imágenes actualizadas de GHCR
             docker compose -f docker-compose.prod.yml pull
 
-            # 2. Desplegar los servicios de forma segura (sin remover la BD bruscamente ni ignorarla)
+            # 2. Desplegar los servicios (levanta DB si falta o reinicia backend/frontend sin tocar la BD)
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # 3. Limpieza de imágenes huérfanas
->>>>>>> c5273e8 (ci(deploy): refactorizar flujo con ghcr y estabilizar arranque sin riesgo en db)
             docker image prune -f
