@@ -88,6 +88,11 @@ export function useModalPublicar({
     onClose();
   };
 
+  const setArchivoFromCamera = (file: File) => {
+    setError("");
+    setArchivo(file);
+  };
+
   return {
     titulo,
     setTitulo,
@@ -98,5 +103,6 @@ export function useModalPublicar({
     handleFileSelect,
     handleSubmit,
     handleClose,
+    setArchivoFromCamera,
   };
 }

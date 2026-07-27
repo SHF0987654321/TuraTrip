@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useModalPublicar } from "@/hooks/useModalPublicar";
+import CameraCapture from "@/components/common/CameraCapture";
 
 interface ModalPublicarProps {
   isOpen: boolean;
@@ -23,7 +25,10 @@ export default function ModalPublicar({
     handleFileSelect,
     handleSubmit,
     handleClose,
+    setArchivoFromCamera,
   } = useModalPublicar({ onSuccess, onClose });
+
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -87,9 +92,17 @@ export default function ModalPublicar({
               type="file"
               accept="image/jpeg, image/png, image/webp"
               onChange={handleFileSelect}
-              required
               className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-950 dark:file:text-teal-300 hover:file:bg-teal-100 cursor-pointer"
             />
+            <div className="mt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCameraOpen(true)}
+                className="px-3 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-500 transition"
+              >
+                Usar cámara
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -110,6 +123,21 @@ export default function ModalPublicar({
           </div>
         </form>
       </div>
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={(file: File) => {
+            setArchivoFromCamera(file);
+            setCameraOpen(false);
+          }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
     </div>
   );
+}
+
+// Render CameraCapture as portal/modal when requested
+// (placed after component so it's easy to locate in file)
+export function ModalPublicarWithCamera(props: ModalPublicarProps) {
+  return <ModalPublicar {...props} />;
 }
