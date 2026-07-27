@@ -5,11 +5,6 @@ on:
     branches:
       - main
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/turatrip-backend:latest
-  IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/turatrip-frontend:latest
-
 jobs:
   # -----------------------------------------------------------------
   # JOB 1: Compilaciones pesadas ejecutadas en los runners de GitHub
@@ -20,14 +15,28 @@ jobs:
       contents: read
       packages: write
 
+    outputs:
+      owner_lowercase: ${{ steps.prep.outputs.owner_lowercase }}
+      image_backend: ${{ steps.prep.outputs.image_backend }}
+      image_frontend: ${{ steps.prep.outputs.image_frontend }}
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+      # Formatear el usuario a minúsculas de forma dinámica para cumplir la regla de Docker
+      - name: Preparar nombres de imágenes en minúsculas
+        id: prep
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner_lowercase=${OWNER}" >> $GITHUB_OUTPUT
+          echo "image_backend=ghcr.io/${OWNER}/turatrip-backend:latest" >> $GITHUB_OUTPUT
+          echo "image_frontend=ghcr.io/${OWNER}/turatrip-frontend:latest" >> $GITHUB_OUTPUT
+
       - name: Iniciar sesión en GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -40,7 +49,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_BACKEND }}
+          tags: ${{ steps.prep.outputs.image_backend }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -50,7 +59,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_FRONTEND }}
+          tags: ${{ steps.prep.outputs.image_frontend }}
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
             INTERNAL_BACKEND_URL=http://backend:8080
@@ -104,8 +113,8 @@ jobs:
             UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
             MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
             MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
-            IMAGE_BACKEND=ghcr.io/${{ github.repository_owner }}/turatrip-backend:latest
-            IMAGE_FRONTEND=ghcr.io/${{ github.repository_owner }}/turatrip-frontend:latest
+            IMAGE_BACKEND="${{ needs.build-and-push.outputs.image_backend }}"
+            IMAGE_FRONTEND="${{ needs.build-and-push.outputs.image_frontend }}"
             EOF
 
             chmod 600 .env
