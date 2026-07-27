@@ -5,33 +5,79 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/turatrip-backend:latest
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/turatrip-frontend:latest
+
 jobs:
-  deploy:
+  # -----------------------------------------------------------------
+  # JOB 1: Compilaciones pesadas ejecutadas en los runners de GitHub
+  # -----------------------------------------------------------------
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Limpiar código anterior en el VPS
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            # Borra de forma limpia los archivos del repositorio anterior sin afectar los volúmenes de Docker
-            find /var/www/seminario1/turatrip -mindepth 1 -delete 2>/dev/null || true
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Copiar archivos al VPS vía SCP
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compilar y publicar imagen del Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_BACKEND }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Compilar y publicar imagen del Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_FRONTEND }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
+            INTERNAL_BACKEND_URL=http://backend:8080
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # -----------------------------------------------------------------
+  # JOB 2: Despliegue liviano en el VPS (SÓLO PULL Y ARRANQUE RÁPIDO)
+  # -----------------------------------------------------------------
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose al VPS vía SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: ".,!node_modules,!output,!.git,!.github"
+          source: "docker-compose.prod.yml"
           target: "/var/www/seminario1/turatrip"
 
-      - name: Ejecutar comandos de Docker en el VPS por SSH
+      - name: Desplegar en el VPS por SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -40,9 +86,11 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
 
-            # Usamos 'EOF' (con comillas simples) para desactivar toda interpretación de variables
-            cat <<EOF > .env
+            # Crear el archivo .env sin procesar variables localmente
+            cat <<'EOF' > .env
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
+            DB_NAME="${{ secrets.DB_NAME }}"
+            DB_URL="${{ secrets.DB_URL }}"
             DB_USERNAME="${{ secrets.DB_USERNAME }}"
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
             JWT_SECRET="${{ secrets.JWT_SECRET }}"
@@ -56,23 +104,26 @@ jobs:
             UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
             MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
             MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
+            IMAGE_BACKEND=ghcr.io/${{ github.repository_owner }}/turatrip-backend:latest
+            IMAGE_FRONTEND=ghcr.io/${{ github.repository_owner }}/turatrip-frontend:latest
             EOF
 
             chmod 600 .env
 
-            # Asegurar binarios en el PATH
-            export PATH="$HOME/bin:$PATH"
-
-            # Detección automática del socket Rootless
+            # Detectar el socket de Docker (Rootless o estándar)
             if [ -S "/run/user/$(id -u)/docker.sock" ]; then
               export DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock"
             elif [ -S "$HOME/.docker/run/docker.sock" ]; then
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
 
-            # Despliegue de la aplicación
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d --build
+            # Iniciar sesión en el registro para descargar las imágenes creadas
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Limpieza de imágenes sin usar
+            # Descargar imágenes y reiniciar contenedores rápidamente
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Limpiar imágenes antiguas
             docker image prune -f
