@@ -102,15 +102,7 @@ jobs:
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
 
-            # 1. Muestra logs del fallo de la BD antes de tumbarla (para diagnóstico en los logs de GH Actions)
-            echo "=== LOGS PREVIOS DE LA BASE DE DATOS ==="
-            docker compose -f docker-compose.prod.yml logs db || true
-
-            # 2. Tumbar contenedores Y BORRAR VOLÚMENES CORRUPTOS
-            echo "=== LIMPIANDO VOLÚMENES E INSTANCIAS PREVIAS ==="
-            docker compose -f docker-compose.prod.yml down -v || true
-
-            # 3. Generar el .env con escape automático de signos '$' a '$$' para Docker Compose
+            echo "=== 1. GENERANDO ARCHIVO .ENV PREVIO ==="
             cat << 'ENVFILE' > .env.tmp
             DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
             DB_NAME="${{ secrets.DB_NAME }}"
@@ -134,12 +126,21 @@ jobs:
             IMAGE_FRONTEND="${{ needs.build-and-push.outputs.image_frontend }}"
             ENVFILE
 
-            # Reemplaza '$' por '$$' dentro del .env para que Docker Compose no intente interpolarlos
+            # Reemplaza '$' por '$$' dentro del .env para evitar interpolaciones de Docker Compose
             sed 's/\$/\$\$/g' .env.tmp > .env
             rm .env.tmp
             chmod 600 .env
 
-            # 4. Iniciar sesión en GHCR y realizar el despliegue limpio
+            echo "=== 2. DIAGNÓSTICO Y LIMPIEZA DE CONTENEDORES/VOLÚMENES ==="
+            docker compose -f docker-compose.prod.yml logs db || true
+
+            # Forzar la detención rápida y eliminación de volúmenes
+            docker compose -f docker-compose.prod.yml down --volumes --remove-orphans -t 2 || true
+
+            # Eliminar procesos MySQL huérfanos que mantengan bloqueados los archivos en el host
+            pkill -f mysqld || true
+
+            echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
