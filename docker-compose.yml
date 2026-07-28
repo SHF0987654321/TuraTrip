@@ -1,6 +1,6 @@
 services:
   db:
-    image: mysql:8.0
+    image: mysql:9.7
     container_name: turatrip-db-dev
     restart: on-failure
     environment:
