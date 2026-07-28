@@ -36,8 +36,9 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         if (typeof document !== "undefined") {
-          document.cookie =
-            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
+          const isProduction = process.env.NODE_ENV === "production";
+          const secureFlag = isProduction ? "; Secure" : "";
+          document.cookie = `token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
         }
         set({ token: null, usuario: null });
       },
