@@ -3,6 +3,8 @@ services:
     image: mysql:9.7
     container_name: turatrip-db-prod
     restart: unless-stopped
+    stop_signal: SIGINT
+    stop_grace_period: 20s
     deploy:
       resources:
         limits:
@@ -18,18 +20,13 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-p${DB_ROOT_PASSWORD}",
+          "CMD-SHELL",
+          'mysqladmin ping -h 127.0.0.1 -u root -p"$$DB_ROOT_PASSWORD" || exit 1',
         ]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - turatrip-net-prod
 
