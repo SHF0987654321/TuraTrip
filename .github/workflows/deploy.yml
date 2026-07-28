@@ -134,5 +134,12 @@ jobs:
             echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Intentar levantar y si falla, capturar logs antes de romper el workflow
+            if ! docker compose -f docker-compose.prod.yml up -d --remove-orphans; then
+              echo "=== ERROR AL LEVANTAR: IMPRIMIENDO LOGS DE LA BASE DE DATOS ==="
+              docker compose -f docker-compose.prod.yml logs --tail=100
+              exit 1
+            fi
+
             docker image prune -f
