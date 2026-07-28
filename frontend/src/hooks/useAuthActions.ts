@@ -14,10 +14,28 @@ export function useAuthActions() {
   const login = async (data: LoginPayload) => {
     const res = await authService.login(data);
     setAuth(res.token, res.usuario);
+
     const isProduction = process.env.NODE_ENV === "production";
     const secureFlag = isProduction ? "; Secure" : "";
     document.cookie = `token=${res.token}; path=/; max-age=86400; SameSite=Lax${secureFlag}`;
-    router.push("/");
+
+    // Mapeamos los roles recibidos en UsuarioResponse (Set<RolResponse>)
+    const roles = res.usuario?.roles || [];
+    const esAdmin = roles.some(
+      (r: any) =>
+        r === "ADMIN" ||
+        r === "ROLE_ADMIN" ||
+        r?.nombre === "ADMIN" ||
+        r?.nombre === "ROLE_ADMIN"
+    );
+
+    // Si es ADMIN lo mandamos al dashboard, si no a la página principal
+    if (esAdmin) {
+      router.push("/dashboard");
+    } else {
+      router.push("/");
+    }
+
     router.refresh();
   };
 

@@ -48,6 +48,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers(GET, "/api/v1/usuarios/perfil").permitAll()
                 .requestMatchers(GET, "/api/v1/usuarios/perfil/*").permitAll()
                 .requestMatchers(GET, "/api/v1/usuarios/perfil/{id:\\d+}").permitAll()

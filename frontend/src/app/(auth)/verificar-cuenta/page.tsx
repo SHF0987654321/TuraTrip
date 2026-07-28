@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import apiClient from "@/lib/api-client";
+import { authService } from "@/services/authService";
 import { Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
 import axios from "axios";
 
@@ -29,16 +29,20 @@ function VerificarContenido() {
 
     const verificarToken = async () => {
       try {
-        const res = await apiClient.get(`/auth/verificar?token=${token}`);
+        // Usamos tu authService directamente
+        const data = await authService.confirmarCuenta(token);
         setStatus("success");
-        setMensaje(res.data?.mensaje ?? "¡Cuenta verificada con éxito!");
+        setMensaje(data?.mensaje ?? "¡Cuenta verificada con éxito!");
         setTimeout(() => router.push("/login?registered=true"), 2250);
       } catch (err: unknown) {
         setStatus("error");
         if (axios.isAxiosError(err) && err.response?.data) {
-          const data = err.response.data as { error: string; correo?: string };
-          setMensaje(data.error);
-          if (data.correo) setCorreoParaReenviar(data.correo);
+          const errorData = err.response.data as {
+            error: string;
+            correo?: string;
+          };
+          setMensaje(errorData.error);
+          if (errorData.correo) setCorreoParaReenviar(errorData.correo);
         } else {
           setMensaje("El enlace expiró o no es válido.");
         }
@@ -51,15 +55,14 @@ function VerificarContenido() {
     if (!correoParaReenviar) return;
     setStatus("sending");
     try {
-      await apiClient.post("/auth/reenviar-verificacion", {
-        correo: correoParaReenviar,
-      });
+      // Usamos tu authService para el reenvío también
+      await authService.reenviarVerificacion(correoParaReenviar);
       setMensaje("Se ha enviado un nuevo enlace a tu correo.");
       setStatus("success");
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data) {
-        const data = err.response.data as { error?: string };
-        setMensaje(data.error || "No pudimos enviar el correo.");
+        const errorData = err.response.data as { error?: string };
+        setMensaje(errorData.error || "No pudimos enviar el correo.");
       } else {
         setMensaje("Error al intentar reenviar la verificación.");
       }
