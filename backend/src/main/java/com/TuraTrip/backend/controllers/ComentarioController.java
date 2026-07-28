@@ -50,4 +50,38 @@ public class ComentarioController {
 
     }
 
+    @PutMapping("/{comentarioId}")
+    public ResponseEntity<ComentarioResponse> editarComentario(
+            @PathVariable Long publicacionId,
+            @PathVariable Long comentarioId,
+            Authentication authentication,
+            @Valid @RequestBody ComentarioRequest request
+    ) {
+
+        String correoUsuario = authentication.getName();
+
+        ComentarioResponse actualizado = comentarioService.editarComentario(
+                publicacionId,
+                comentarioId,
+                correoUsuario,
+                request
+        );
+
+        return ResponseEntity.ok(actualizado);
+    }
+
+    @DeleteMapping("/{comentarioId}")
+    public ResponseEntity<Void> eliminarComentario(
+            @PathVariable Long publicacionId,
+            @PathVariable Long comentarioId,
+            Authentication authentication
+    ) {
+
+        String correoUsuario = authentication.getName();
+
+        comentarioService.eliminarComentario(publicacionId, comentarioId, correoUsuario);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

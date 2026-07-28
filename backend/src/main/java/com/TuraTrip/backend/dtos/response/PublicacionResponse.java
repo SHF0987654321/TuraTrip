@@ -1,6 +1,7 @@
 package com.TuraTrip.backend.dtos.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record PublicacionResponse(
     Long id,
@@ -12,5 +13,9 @@ public record PublicacionResponse(
     Long autorId,
     String autorFotoPerfil,
     Long categoriaId,
-    String categoriaNombre
+    String categoriaNombre,
+    String direccion,
+    Double latitud,
+    Double longitud,
+    List<ComentarioResponse> comentarios
 ) {}

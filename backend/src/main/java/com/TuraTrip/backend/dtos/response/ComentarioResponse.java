@@ -9,6 +9,8 @@ public record ComentarioResponse(
     LocalDateTime fechaCreacion,
     Long autorId,
     String autorNombre,
-    String autorFotoPerfil
+    String autorFotoPerfil,
+    Long publicacionId,
+    String publicacionTitulo
 
 ) {}

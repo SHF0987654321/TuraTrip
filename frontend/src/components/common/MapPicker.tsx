@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [4.711, -74.0721];
-const DEFAULT_ZOOM = 13;
 
 interface MapPickerProps {
   latitud?: number | null;
@@ -24,85 +21,26 @@ export default function MapPicker({
   direccion,
   onSelect,
 }: MapPickerProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(direccion || "");
+  const [coords, setCoords] = useState<[number, number] | null>(
+    latitud != null && longitud != null ? ([latitud, longitud] as [number, number]) : null
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const position: [number, number] | null =
-    latitud != null && longitud != null
-      ? ([latitud, longitud] as [number, number])
-      : null;
+  const mapCenter = coords || DEFAULT_CENTER;
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${
+    mapCenter[1] - 0.01
+  }%2C${mapCenter[0] - 0.01}%2C${mapCenter[1] + 0.01}%2C${
+    mapCenter[0] + 0.01
+  }&layer=mapnik&marker=${mapCenter[0]}%2C${mapCenter[1]}`;
 
-    const map = L.map(containerRef.current, {
-      center: position || DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
-      scrollWheelZoom: false,
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    map.on("click", (e) => {
-      const { lat, lng } = e.latlng;
-      setMarker(map, lat, lng, direccion || query || null);
-      onSelect({
-        latitud: lat,
-        longitud: lng,
-        direccion: direccion || query || null,
-      });
-    });
-
-    mapRef.current = map;
-
-    return () => {
-      if (markerRef.current && mapRef.current) {
-        mapRef.current.removeLayer(markerRef.current);
-      }
-      map.remove();
-      mapRef.current = null;
-      markerRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    if (position) {
-      map.flyTo(position, 16, { duration: 1.2 });
-      setMarker(map, position[0], position[1], direccion || null);
-    }
-  }, [latitud, longitud, direccion, query]);
-
-  const setMarker = (
-    map: L.Map,
-    lat: number,
-    lng: number,
-    label: string | null | undefined
-  ) => {
-    if (markerRef.current && mapRef.current) {
-      mapRef.current.removeLayer(markerRef.current);
-    }
-    const marker = L.marker([lat, lng]);
-    if (label) {
-      marker.bindPopup(label);
-    }
-    marker.addTo(map);
-    markerRef.current = marker;
-  };
+  const [mapKey, setMapKey] = useState(0);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    if (!query || query.length < 3) {
+    if (!query || query.trim().length < 3) {
       return;
     }
 
@@ -128,15 +66,12 @@ export default function MapPicker({
         if (data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lon = parseFloat(data[0].lon);
-          const map = mapRef.current;
-          if (map) {
-            setMarker(map, lat, lon, data[0].display_name || query);
-            map.flyTo([lat, lon], 16, { duration: 1.2 });
-          }
+          setCoords([lat, lon]);
+          setMapKey((k) => k + 1);
           onSelect({
             latitud: lat,
             longitud: lon,
-            direccion: data[0].display_name || direccion || query,
+            direccion: data[0].display_name || query,
           });
         }
       } catch {
@@ -144,12 +79,12 @@ export default function MapPicker({
       } finally {
         timerRef.current = null;
       }
-    }, 600);
+    }, 500);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query, direccion, onSelect]);
+  }, [query, onSelect]);
 
   return (
     <div className="space-y-2">
@@ -161,13 +96,17 @@ export default function MapPicker({
         placeholder="Buscar dirección o lugar..."
       />
 
-      <div
-        ref={containerRef}
-        className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800"
-        style={{ height: 256, width: "100%" }}
-      />
+      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800">
+        <iframe
+          key={`${mapCenter[0]}-${mapCenter[1]}`}
+          title="Mapa OpenStreetMap"
+          src={mapSrc}
+          className="h-64 w-full border-0"
+          loading="lazy"
+        />
+      </div>
 
-      {position && direccion && (
+      {coords && direccion && (
         <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
           📍 {direccion}
         </p>

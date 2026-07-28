@@ -69,6 +69,9 @@ public class PublicacionServiceImpl implements PublicacionService {
                 .fechaCreacion(LocalDateTime.now())
                 .usuario(usuario)
                 .categoria(categoria)
+                .direccion(request.direccion())
+                .latitud(request.latitud())
+                .longitud(request.longitud())
                 .build();
 
         Publicacion guardada = publicacionRepository.save(publicacion);

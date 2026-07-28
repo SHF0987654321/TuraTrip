@@ -28,6 +28,9 @@ export function useModalPublicar({
   const [archivo, setArchivo] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [latitud, setLatitud] = useState<number | null>(null);
+  const [longitud, setLongitud] = useState<number | null>(null);
+  const [direccion, setDireccion] = useState<string>("");
 
   const resetForm = () => {
     setTitulo("");
@@ -36,6 +39,9 @@ export function useModalPublicar({
     setArchivo(null);
     setError("");
     setCargando(false);
+    setLatitud(null);
+    setLongitud(null);
+    setDireccion("");
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +84,9 @@ export function useModalPublicar({
           titulo,
           descripcion,
           categoria: normalizeCategoria(categoria) || null,
+          latitud: latitud ?? undefined,
+          longitud: longitud ?? undefined,
+          direccion: direccion || null,
         },
         archivo
       );
@@ -125,5 +134,11 @@ export function useModalPublicar({
     handleSubmit,
     handleClose,
     setArchivoFromCamera,
+    latitud,
+    setLatitud,
+    longitud,
+    setLongitud,
+    direccion,
+    setDireccion,
   };
 }
