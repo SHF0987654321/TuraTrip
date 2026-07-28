@@ -1,22 +1,25 @@
 package com.TuraTrip.backend.services;
 
-import com.TuraTrip.backend.exceptions.ArchivoDemasiadoGrandeException;
-import com.TuraTrip.backend.exceptions.ArchivoInvalidoException;
-import com.TuraTrip.backend.exceptions.ErrorAlmacenamientoException;
-import com.TuraTrip.backend.exceptions.FormatoNoSoportadoException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.TuraTrip.backend.exceptions.ArchivoDemasiadoGrandeException;
+import com.TuraTrip.backend.exceptions.ArchivoInvalidoException;
+import com.TuraTrip.backend.exceptions.ErrorAlmacenamientoException;
+import com.TuraTrip.backend.exceptions.FormatoNoSoportadoException;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -84,7 +87,27 @@ public class LocalStorageServiceImpl implements StorageService {
             return rutaRelativa;
         }
 
-        return apiUrl + "/uploads/" + rutaRelativa;
+        String baseUrl = apiUrl == null ? "" : apiUrl.trim();
+        if (!baseUrl.isBlank()) {
+            try {
+                URI uri = URI.create(baseUrl);
+                String scheme = uri.getScheme();
+                String authority = uri.getAuthority();
+                String path = uri.getPath() == null ? "" : uri.getPath();
+
+                if (path != null && (path.equals("/api") || path.equals("/api/v1") || path.startsWith("/api/"))) {
+                    path = "";
+                }
+
+                if (scheme != null && authority != null) {
+                    baseUrl = scheme + "://" + authority + path;
+                }
+            } catch (IllegalArgumentException ignored) {
+                // Si no es una URL válida, usamos el valor original sin modificar
+            }
+        }
+
+        return baseUrl + "/uploads/" + rutaRelativa;
     }
 
     private void validarArchivo(MultipartFile archivo) {

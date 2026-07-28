@@ -27,6 +27,18 @@ public class GlobalExceptionHandler {
             .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(CategoriaYaExistenteException.class)
+    public ResponseEntity<Map<String, String>> handleCategoriaDuplicada(CategoriaYaExistenteException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(CategoriaEnUsoException.class)
+    public ResponseEntity<Map<String, String>> handleCategoriaEnUso(CategoriaEnUsoException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

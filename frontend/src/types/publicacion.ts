@@ -7,11 +7,14 @@ export interface Publicacion {
   autorId: number;
   autorNombre: string;
   autorFotoPerfil: string | null;
+  categoriaId?: number | null;
+  categoriaNombre?: string | null;
 }
 
 export interface PublicacionRequest {
   titulo: string;
   descripcion: string;
+  categoria?: string | null;
 }
 
 export interface PageResponse<T> {

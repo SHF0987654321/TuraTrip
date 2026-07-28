@@ -2,8 +2,16 @@
 
 import { useState } from "react";
 import { publicacionService } from "@/services/publicacionService";
+import { formatCommaSeparatedHashtags } from "@/lib/utils";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+// Helper para limpiar/normalizar el string de la categoría antes de enviarlo
+const normalizeCategoria = (cat: string | undefined | null): string => {
+  if (!cat) return "";
+  const trimmed = cat.trim();
+  return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+};
 
 interface UseModalPublicarProps {
   onSuccess: (idPublicacion: number) => void;
@@ -16,6 +24,7 @@ export function useModalPublicar({
 }: UseModalPublicarProps) {
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [categoria, setCategoria] = useState<string>("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -23,6 +32,7 @@ export function useModalPublicar({
   const resetForm = () => {
     setTitulo("");
     setDescripcion("");
+    setCategoria("");
     setArchivo(null);
     setError("");
     setCargando(false);
@@ -48,6 +58,10 @@ export function useModalPublicar({
     setArchivo(file);
   };
 
+  const handleCategoriaBlur = () => {
+    setCategoria(formatCommaSeparatedHashtags(categoria));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!archivo) {
@@ -60,7 +74,11 @@ export function useModalPublicar({
 
     try {
       const nuevaPublicacion = await publicacionService.crear(
-        { titulo, descripcion },
+        {
+          titulo,
+          descripcion,
+          categoria: normalizeCategoria(categoria) || null,
+        },
         archivo
       );
       resetForm();
@@ -98,6 +116,9 @@ export function useModalPublicar({
     setTitulo,
     descripcion,
     setDescripcion,
+    categoria,
+    setCategoria,
+    handleCategoriaBlur,
     error,
     cargando,
     handleFileSelect,

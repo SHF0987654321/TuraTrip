@@ -8,14 +8,14 @@ import {
 export const publicacionService = {
   getFeed: async (page = 0, size = 10) => {
     const res = await apiClient.get<PageResponse<Publicacion>>(
-      `/api/v1/publicaciones?page=${page}&size=${size}`
+      `/publicaciones?page=${page}&size=${size}`
     );
     return res.data;
   },
 
   getMisPublicaciones: async (page = 0, size = 10) => {
     const res = await apiClient.get<PageResponse<Publicacion>>(
-      `/api/v1/publicaciones/mias?page=${page}&size=${size}`
+      `/publicaciones/mias?page=${page}&size=${size}`
     );
     return res.data;
   },
@@ -26,13 +26,13 @@ export const publicacionService = {
     size = 10
   ) => {
     const res = await apiClient.get<PageResponse<Publicacion>>(
-      `/api/v1/publicaciones/usuario/${usuarioId}?page=${page}&size=${size}`
+      `/publicaciones/usuario/${usuarioId}?page=${page}&size=${size}`
     );
     return res.data;
   },
 
   getPorId: async (id: number | string) => {
-    const res = await apiClient.get<Publicacion>(`/api/v1/publicaciones/${id}`);
+    const res = await apiClient.get<Publicacion>(`/publicaciones/${id}`);
     return res.data;
   },
 
@@ -44,14 +44,13 @@ export const publicacionService = {
     );
     formData.append("archivo", archivo);
 
-    const res = await apiClient.post<Publicacion>(
-      "/api/v1/publicaciones",
-      formData
-    );
+    const res = await apiClient.post<Publicacion>("/publicaciones", formData);
     return res.data;
   },
 
   eliminar: async (id: number | string) => {
-    await apiClient.delete(`/api/v1/publicaciones/${id}`);
+    await apiClient.delete(`/publicaciones/${id}`);
   },
 };
+
+export default publicacionService;

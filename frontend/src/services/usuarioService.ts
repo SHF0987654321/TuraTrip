@@ -3,17 +3,17 @@ import { Perfil } from "@/types/usuario";
 
 export const usuarioService = {
   getPerfil: async () => {
-    const res = await apiClient.get<Perfil>("/api/v1/usuarios/perfil");
+    const res = await apiClient.get<Perfil>("/usuarios/perfil");
     return res.data;
   },
 
   getPerfilPorId: async (id: number | string) => {
-    const res = await apiClient.get<Perfil>(`/api/v1/usuarios/perfil/${id}`);
+    const res = await apiClient.get<Perfil>(`/usuarios/perfil/${id}`);
     return res.data;
   },
 
   actualizarNombre: async (nombre: string) => {
-    const res = await apiClient.put<Perfil>("/api/v1/usuarios/perfil", {
+    const res = await apiClient.put<Perfil>("/usuarios/perfil", {
       nombre,
     });
     return res.data;
@@ -24,7 +24,7 @@ export const usuarioService = {
     formData.append("archivo", archivo);
 
     const res = await apiClient.post<{ fotoPerfil: string }>(
-      "/api/v1/usuarios/perfil/foto",
+      "/usuarios/perfil/foto",
       formData
     );
     return res.data;

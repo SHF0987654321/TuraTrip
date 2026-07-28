@@ -29,9 +29,7 @@ function VerificarContenido() {
 
     const verificarToken = async () => {
       try {
-        const res = await apiClient.get(
-          `/api/v1/auth/verificar?token=${token}`
-        );
+        const res = await apiClient.get(`/auth/verificar?token=${token}`);
         setStatus("success");
         setMensaje(res.data?.mensaje ?? "¡Cuenta verificada con éxito!");
         setTimeout(() => router.push("/login?registered=true"), 2250);
@@ -53,7 +51,7 @@ function VerificarContenido() {
     if (!correoParaReenviar) return;
     setStatus("sending");
     try {
-      await apiClient.post("/api/v1/auth/reenviar-verificacion", {
+      await apiClient.post("/auth/reenviar-verificacion", {
         correo: correoParaReenviar,
       });
       setMensaje("Se ha enviado un nuevo enlace a tu correo.");

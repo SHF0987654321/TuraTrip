@@ -19,7 +19,15 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       isHydrated: false,
 
-      setAuth: (token, usuario) => set({ token, usuario }),
+      // Se limpia el token de saltos de línea y espacios al guardarlo
+      setAuth: (token, usuario) => {
+        const cleanToken = token
+          ? String(token)
+              .replace(/[\r\n\s]+/g, "")
+              .trim()
+          : null;
+        set({ token: cleanToken, usuario });
+      },
 
       actualizarUsuario: (nuevosDatos) =>
         set((state) => ({

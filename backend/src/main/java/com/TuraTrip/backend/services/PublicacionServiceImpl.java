@@ -1,16 +1,6 @@
 package com.TuraTrip.backend.services;
 
-import com.TuraTrip.backend.dtos.request.PublicacionRequest;
-import com.TuraTrip.backend.dtos.response.PublicacionResponse;
-import com.TuraTrip.backend.exceptions.AccesoNoAutorizadoException;
-import com.TuraTrip.backend.exceptions.PublicacionNoEncontradaException;
-import com.TuraTrip.backend.exceptions.UsuarioNoEncontradoException;
-import com.TuraTrip.backend.mappers.PublicacionMapper;
-import com.TuraTrip.backend.models.Publicacion;
-import com.TuraTrip.backend.models.Usuario;
-import com.TuraTrip.backend.repositories.PublicacionRepository;
-import com.TuraTrip.backend.repositories.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +10,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import com.TuraTrip.backend.dtos.request.PublicacionRequest;
+import com.TuraTrip.backend.dtos.response.PublicacionResponse;
+import com.TuraTrip.backend.exceptions.AccesoNoAutorizadoException;
+import com.TuraTrip.backend.exceptions.PublicacionNoEncontradaException;
+import com.TuraTrip.backend.exceptions.UsuarioNoEncontradoException;
+import com.TuraTrip.backend.mappers.PublicacionMapper;
+import com.TuraTrip.backend.models.Categoria;
+import com.TuraTrip.backend.models.Publicacion;
+import com.TuraTrip.backend.models.Usuario;
+import com.TuraTrip.backend.repositories.CategoriaRepository;
+import com.TuraTrip.backend.repositories.PublicacionRepository;
+import com.TuraTrip.backend.repositories.UsuarioRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,7 @@ public class PublicacionServiceImpl implements PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CategoriaRepository categoriaRepository;
     private final PublicacionMapper publicacionMapper;
     private final StorageService storageService;
 
@@ -43,12 +47,28 @@ public class PublicacionServiceImpl implements PublicacionService {
         String rutaRelativa = storageService.guardarArchivo(archivo, "publicaciones");
 
         // 3. Construir y guardar la publicación con la ruta relativa
+        Categoria categoria = null;
+        if (request.categoria() != null && !request.categoria().isBlank()) {
+            String nombreCategoria = request.categoria().trim();
+            if (nombreCategoria.startsWith("#")) {
+                nombreCategoria = nombreCategoria.substring(1).trim();
+            }
+
+            final String nombreFinal = nombreCategoria; // Variable inmutable para la lambda
+
+            if (!nombreFinal.isBlank()) {
+                categoria = categoriaRepository.findByNombreIgnoreCase(nombreFinal)
+                        .orElseGet(() -> categoriaRepository.save(Categoria.builder().nombre(nombreFinal).build()));
+            }
+        }
+
         Publicacion publicacion = Publicacion.builder()
                 .titulo(request.titulo())
                 .descripcion(request.descripcion())
                 .imagen(rutaRelativa)
                 .fechaCreacion(LocalDateTime.now())
                 .usuario(usuario)
+                .categoria(categoria)
                 .build();
 
         Publicacion guardada = publicacionRepository.save(publicacion);

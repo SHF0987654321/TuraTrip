@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout del código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Preparar nombres de imágenes en minúsculas
         id: prep
@@ -33,17 +33,17 @@ jobs:
           echo "image_frontend=ghcr.io/${OWNER}/turatrip-frontend:latest" >> $GITHUB_OUTPUT
 
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Compilar y publicar imagen del Backend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -53,7 +53,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Compilar y publicar imagen del Frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - name: Checkout del código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Copiar docker-compose al VPS vía SCP
         uses: appleboy/scp-action@v0.1.7
@@ -94,33 +94,33 @@ jobs:
           script: |
             cd /var/www/seminario1/turatrip
 
-            # Comillas simples alrededor de las variables para que el signo $ no sea interpretado por Bash
+            # Crear el archivo .env permitiendo la expansión de secretos
             cat <<EOF > .env
-            DB_ROOT_PASSWORD='${{ secrets.DB_ROOT_PASSWORD }}'
-            DB_NAME='${{ secrets.DB_NAME }}'
-            DB_URL='${{ secrets.DB_URL }}'
-            DB_USERNAME='${{ secrets.DB_USERNAME }}'
-            DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
-            DB_DRIVER='${{ secrets.DB_DRIVER }}'
-            HIBERNATE_DIALECT='${{ secrets.HIBERNATE_DIALECT }}'
-            JWT_SECRET='${{ secrets.JWT_SECRET }}'
-            JWT_EXPIRATION_MS='${{ secrets.JWT_EXPIRATION_MS }}'
-            API_URL='${{ secrets.API_URL }}'
-            FRONTEND_URL='${{ secrets.FRONTEND_URL }}'
-            SMTP_HOST='${{ secrets.SMTP_HOST }}'
-            SMTP_PORT='${{ secrets.SMTP_PORT }}'
-            SMTP_USERNAME='${{ secrets.SMTP_USERNAME }}'
-            SMTP_PASSWORD='${{ secrets.SMTP_PASSWORD }}'
-            UPLOADS_DIR='${{ secrets.UPLOADS_DIR }}'
-            MAX_FILE_SIZE='${{ secrets.MAX_FILE_SIZE }}'
-            MAX_REQUEST_SIZE='${{ secrets.MAX_REQUEST_SIZE }}'
-            IMAGE_BACKEND='${{ needs.build-and-push.outputs.image_backend }}'
-            IMAGE_FRONTEND='${{ needs.build-and-push.outputs.image_frontend }}'
+            DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
+            DB_NAME="${{ secrets.DB_NAME }}"
+            DB_URL="${{ secrets.DB_URL }}"
+            DB_USERNAME="${{ secrets.DB_USERNAME }}"
+            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            DB_DRIVER="${{ secrets.DB_DRIVER }}"
+            HIBERNATE_DIALECT="${{ secrets.HIBERNATE_DIALECT }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            JWT_EXPIRATION_MS="${{ secrets.JWT_EXPIRATION_MS }}"
+            API_URL="${{ secrets.API_URL }}"
+            FRONTEND_URL="${{ secrets.FRONTEND_URL }}"
+            SMTP_HOST="${{ secrets.SMTP_HOST }}"
+            SMTP_PORT="${{ secrets.SMTP_PORT }}"
+            SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
+            SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
+            UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
+            MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
+            MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
+            IMAGE_BACKEND="${{ needs.build-and-push.outputs.image_backend }}"
+            IMAGE_FRONTEND="${{ needs.build-and-push.outputs.image_frontend }}"
             EOF
 
             chmod 600 .env
 
-            # Exportar socket explícito y variables de entorno para Docker Rootless
+            # Exportar socket explícito y variables de entorno Rootless
             export XDG_RUNTIME_DIR="/run/user/$(id -u)"
             if [ -S "$XDG_RUNTIME_DIR/docker.sock" ]; then
               export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
@@ -131,11 +131,23 @@ jobs:
             # Iniciar sesión en GHCR con el host rootless configurado
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # 1. Descargar las imágenes actualizadas de GHCR
-            docker compose -f docker-compose.prod.yml pull
+            # 1. Reiniciar servicio rootless por SSH para destrabar sockets bloqueados
+            systemctl --user restart docker || true
+            sleep 3
 
-            # 2. Desplegar los servicios (levanta DB si falta o reinicia backend/frontend sin tocar la BD)
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # 2. Forzar remoción del contenedor de DB si quedó zombi
+            CONTAINER_ID=$(docker ps -a -q --filter "name=-db-prod" 2>/dev/null || true)
+            if [ ! -z "$CONTAINER_ID" ]; then
+              docker kill $CONTAINER_ID || true
+              docker rm -f $CONTAINER_ID || true
+            fi
 
-            # 3. Limpieza de imágenes huérfanas
+            # 3. Limpiar estado de red/compose de forma segura
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+
+            # 4. Descargar imágenes y desplegar solo backend y frontend
+            docker compose -f docker-compose.prod.yml pull backend frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
+
+            # Limpieza de imágenes sin romper el demonio
             docker image prune -f

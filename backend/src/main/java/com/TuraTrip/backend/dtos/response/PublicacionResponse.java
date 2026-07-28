@@ -10,5 +10,7 @@ public record PublicacionResponse(
     LocalDateTime fechaCreacion,
     String autorNombre,
     Long autorId,
-    String autorFotoPerfil
+    String autorFotoPerfil,
+    Long categoriaId,
+    String categoriaNombre
 ) {}

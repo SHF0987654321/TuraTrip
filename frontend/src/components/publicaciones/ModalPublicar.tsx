@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useModalPublicar } from "@/hooks/useModalPublicar";
+import { formatHashtags, formatCommaSeparatedHashtags } from "@/lib/utils";
 import CameraCapture from "@/components/common/CameraCapture";
 
 interface ModalPublicarProps {
@@ -20,6 +21,9 @@ export default function ModalPublicar({
     setTitulo,
     descripcion,
     setDescripcion,
+    categoria,
+    setCategoria,
+    handleCategoriaBlur,
     error,
     cargando,
     handleFileSelect,
@@ -75,12 +79,27 @@ export default function ModalPublicar({
             </label>
             <textarea
               value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
+              onChange={(e) => setDescripcion(formatHashtags(e.target.value))}
               required
               maxLength={1000}
               rows={3}
               className="w-full p-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-[hsl(174_72%_40%)] resize-none"
               placeholder="Cuéntanos qué tiene de especial..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1">
+              Categoría
+            </label>
+            <input
+              type="text"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              onBlur={handleCategoriaBlur}
+              maxLength={50}
+              className="w-full p-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-[hsl(174_72%_40%)]"
+              placeholder="#Viaje, #Relax, #Buenaventura"
             />
           </div>
 

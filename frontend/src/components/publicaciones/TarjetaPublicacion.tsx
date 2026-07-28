@@ -90,9 +90,16 @@ export default function TarjetaPublicacion({
 
       {/* CONTENIDO */}
       <div className="p-5">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          {publicacion.titulo}
-        </h2>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            {publicacion.titulo}
+          </h2>
+          {publicacion.categoriaNombre && (
+            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              {publicacion.categoriaNombre}
+            </span>
+          )}
+        </div>
         <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
           {publicacion.descripcion}
         </p>

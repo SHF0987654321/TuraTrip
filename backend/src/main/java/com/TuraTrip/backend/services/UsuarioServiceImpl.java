@@ -106,9 +106,22 @@ public class UsuarioServiceImpl implements UsuarioService {
         Token tokenVerificacion = tokenRepository.findByTokenAndTipo(tokenStr, TipoToken.VERIFICACION)
             .orElseThrow(() -> new ResourceNotFoundException("Enlace no válido."));
 
-        if (tokenVerificacion.isUsado()) throw new TokenVerificadoException("Ya verificado.");
-        if (tokenVerificacion.estaExpirado()) throw new TokenExpiradoException("Enlace expirado.", tokenVerificacion.getUsuario().getCorreo());
+        // Si el token ya fue marcado como usado
+        if (tokenVerificacion.isUsado()) {
+            // Si el usuario ya quedó activo, retornamos sin lanzar excepción para evitar
+            // fallos por peticiones duplicadas desde React StrictMode o dobles clics
+            if (Boolean.TRUE.equals(tokenVerificacion.getUsuario().getHabilitado())) {
+                return;
+            }
+            throw new TokenVerificadoException("Ya verificado.");
+        }
 
+        // Validación de expiración
+        if (tokenVerificacion.estaExpirado()) {
+            throw new TokenExpiradoException("Enlace expirado.", tokenVerificacion.getUsuario().getCorreo());
+        }
+
+        // Marcar como usado y activar la cuenta
         tokenVerificacion.setUsado(true);
         tokenRepository.save(tokenVerificacion);
 
