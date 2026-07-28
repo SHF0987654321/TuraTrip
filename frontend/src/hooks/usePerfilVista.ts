@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Perfil } from "@/types/usuario";
-import { Publicacion, PageResponse } from "@/types/publicacion";
+import { Publicacion, Comentario, PageResponse } from "@/types/publicacion";
 import { useAuthStore } from "@/store/authStore";
 import { usuarioService } from "@/services/usuarioService";
 import { publicacionService } from "@/services/publicacionService";
+import { comentarioService } from "@/services/comentarioService";
 
 function determinarSiHayMas<T>(pageData: PageResponse<T>): boolean {
   if (!pageData.content || pageData.content.length === 0) {
@@ -28,6 +29,7 @@ export function usePerfilVista(usuarioIdObjetivo?: string | number) {
 
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
@@ -56,6 +58,13 @@ export function usePerfilVista(usuarioIdObjetivo?: string | number) {
           nombre: resPerfil.nombre,
           fotoPerfil: resPerfil.fotoPerfil,
         });
+
+        comentarioService
+          .listarPorUsuario(resPerfil.id, 0, 10)
+          .then((res) => setComentarios(res.content || []))
+          .catch((err) =>
+            console.error("Error al cargar comentarios del perfil:", err)
+          );
       } else if (usuarioIdObjetivo) {
         const [resPerfil, resPublicaciones] = await Promise.all([
           usuarioService.getPerfilPorId(usuarioIdObjetivo),
@@ -69,6 +78,13 @@ export function usePerfilVista(usuarioIdObjetivo?: string | number) {
         setPerfil(resPerfil);
         setPublicaciones(resPublicaciones.content || []);
         setHasMore(determinarSiHayMas(resPublicaciones));
+
+        comentarioService
+          .listarPorUsuario(usuarioIdObjetivo, 0, 10)
+          .then((res) => setComentarios(res.content || []))
+          .catch((err) =>
+            console.error("Error al cargar comentarios del perfil:", err)
+          );
       }
     } catch (err: any) {
       console.error("Error al cargar perfil:", err);
@@ -157,6 +173,7 @@ export function usePerfilVista(usuarioIdObjetivo?: string | number) {
   return {
     perfil,
     publicaciones,
+    comentarios,
     loading,
     loadingMore,
     hasMore,

@@ -16,6 +16,8 @@ public interface ComentarioMapper {
         target = "autorFotoPerfil",
         expression = "java(comentario.getUsuario() != null && comentario.getUsuario().getFotoPerfil() != null ? storageService.construirUrlPublica(comentario.getUsuario().getFotoPerfil()) : null)"
     )
+    @Mapping(source = "publicacion.id", target = "publicacionId")
+    @Mapping(source = "publicacion.titulo", target = "publicacionTitulo")
     ComentarioResponse toResponse(Comentario comentario);
 
 }

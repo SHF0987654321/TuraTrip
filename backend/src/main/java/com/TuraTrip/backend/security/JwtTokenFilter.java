@@ -63,7 +63,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        // Excluir todas las rutas de autenticación
         return path.startsWith("/api/v1/auth");
     }
 }

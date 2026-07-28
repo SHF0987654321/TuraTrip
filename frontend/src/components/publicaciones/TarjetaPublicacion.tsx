@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Publicacion } from "@/types/publicacion";
 import { Rol } from "@/types/usuario";
 import CabeceraAutor from "./CabeceraAutor";
+import ComentariosPublicacion from "./ComentariosPublicacion";
 import { getProxyImageUrl } from "@/lib/utils";
 
 interface TarjetaPublicacionProps {
@@ -103,6 +104,23 @@ export default function TarjetaPublicacion({
         <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
           {publicacion.descripcion}
         </p>
+
+        {publicacion.latitud != null && publicacion.longitud != null && (
+          <a
+            href={`https://www.openstreetmap.org/?mlat=${publicacion.latitud}&mlon=${publicacion.longitud}#map=16/${publicacion.latitud}/${publicacion.longitud}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            📍 {publicacion.direccion || "Ver ubicación en OpenStreetMap"}
+          </a>
+        )}
+
+        <ComentariosPublicacion
+          publicacionId={publicacion.id}
+          usuarioRoles={usuarioRoles}
+        />
       </div>
     </article>
   );

@@ -12,6 +12,12 @@ public record PublicacionRequest(
     @Size(max = 1000, message = "La descripción no puede exceder 1000 caracteres")
     String descripcion,
 
-    String categoria
+    String categoria,
+
+    String direccion,
+
+    Double latitud,
+
+    Double longitud
 
 ) {}

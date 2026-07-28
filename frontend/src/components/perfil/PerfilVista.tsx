@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FeedPublicaciones from "@/components/publicaciones/FeedPublicaciones";
 import TarjetaPerfilHeader from "./TarjetaPerfilHeader";
@@ -15,6 +16,7 @@ export default function PerfilVista({ usuarioIdObjetivo }: PerfilVistaProps) {
   const {
     perfil,
     publicaciones,
+    comentarios,
     loading,
     loadingMore,
     hasMore,
@@ -96,6 +98,33 @@ export default function PerfilVista({ usuarioIdObjetivo }: PerfilVistaProps) {
           onLoadMore={fetchNextPage}
         />
       </div>
+
+      {/* SECCIÓN DE COMENTARIOS */}
+      {comentarios.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800">
+          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">
+            {esMiPerfil ? "Mis Comentarios" : `Comentarios de ${perfil.nombre}`}
+          </h2>
+
+          <div className="space-y-3">
+            {comentarios.map((c) => (
+              <Link
+                key={c.id}
+                href={`/publicaciones/${c.publicacionId}`}
+                className="block rounded-xl border border-gray-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 hover:border-[hsl(174_72%_40%)] transition"
+              >
+                <p className="text-sm text-gray-800 dark:text-gray-100">
+                  {c.contenido}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  En &quot;{c.publicacionTitulo}&quot; •{" "}
+                  {new Date(c.fechaCreacion).toLocaleString()}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* MODAL AMPLIAR IMAGEN */}
       <ModalImagenExpandida

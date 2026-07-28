@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import static org.springframework.http.HttpMethod.DELETE;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -47,18 +48,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers(GET, "/api/v1/usuarios/perfil").permitAll()
                 .requestMatchers(GET, "/api/v1/usuarios/perfil/*").permitAll()
                 .requestMatchers(GET, "/api/v1/usuarios/perfil/{id:\\d+}").permitAll()
+                .requestMatchers(GET, "/api/v1/publicaciones").permitAll()
+                .requestMatchers(GET, "/api/v1/publicaciones/**").permitAll()
+                .requestMatchers(GET, "/api/v1/categorias").permitAll()
+                .requestMatchers(POST, "/api/v1/publicaciones/**").authenticated()
+                .requestMatchers(PUT, "/api/v1/publicaciones/**").authenticated()
+                .requestMatchers(DELETE, "/api/v1/publicaciones/**").authenticated()
                 .requestMatchers(GET, "/api/v1/publicaciones/mias").authenticated()
                 .requestMatchers(GET, "/api/v1/publicaciones/usuario/*").permitAll()
-                .requestMatchers(GET, "/api/v1/categorias").permitAll()
-                
-                // Mapeo explícito para la raíz /api/v1/publicaciones y subrutas /api/v1/publicaciones/**
-                .requestMatchers(POST, "/api/v1/publicaciones", "/api/v1/publicaciones/**").authenticated()
-                .requestMatchers(DELETE, "/api/v1/publicaciones", "/api/v1/publicaciones/**").authenticated()
-                .requestMatchers(GET, "/api/v1/publicaciones", "/api/v1/publicaciones/**").permitAll()
-                
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             );
 
         http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
