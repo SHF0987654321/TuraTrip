@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Publicacion } from "@/types/publicacion";
 import { Rol } from "@/types/usuario";
 import CabeceraAutor from "./CabeceraAutor";
+import Comentarios from "./Comentarios";
 import { getProxyImageUrl } from "@/lib/utils";
 
 interface TarjetaPublicacionProps {
@@ -39,6 +40,7 @@ export default function TarjetaPublicacion({
   const rolesNombres = usuarioRoles.map((r) =>
     typeof r === "string" ? r : r.nombre
   );
+
   const esAdmin =
     rolesNombres.includes("ROLE_ADMIN") || rolesNombres.includes("ADMIN");
 
@@ -55,7 +57,7 @@ export default function TarjetaPublicacion({
         !yaEnDetalle ? "cursor-pointer hover:shadow-md" : ""
       }`}
     >
-      {/* CABECERA (Redirige al detalle si se presiona en zonas neutras) */}
+      {/* CABECERA */}
       <CabeceraAutor
         publicacionId={publicacion.id}
         autorId={publicacion.autorId}
@@ -67,7 +69,7 @@ export default function TarjetaPublicacion({
         onDeleteSuccess={onDeleteSuccess}
       />
 
-      {/* CONTENEDOR DE LA IMAGEN */}
+      {/* IMAGEN */}
       <div
         className="w-full relative h-[380px] sm:h-[450px] bg-slate-100 dark:bg-slate-950 overflow-hidden group cursor-pointer"
         onClick={(e) => {
@@ -94,15 +96,25 @@ export default function TarjetaPublicacion({
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
             {publicacion.titulo}
           </h2>
+
           {publicacion.categoriaNombre && (
             <span className="px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               {publicacion.categoriaNombre}
             </span>
           )}
         </div>
+
         <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
           {publicacion.descripcion}
         </p>
+
+        {/* COMENTARIOS */}
+        <div
+          className="mt-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Comentarios publicacionId={publicacion.id} />
+        </div>
       </div>
     </article>
   );
