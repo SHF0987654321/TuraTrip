@@ -102,43 +102,35 @@ jobs:
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
 
-            echo "=== 1. GENERANDO ARCHIVO .ENV PREVIO ==="
-            cat << 'ENVFILE' > .env.tmp
-            DB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
-            DB_URL="${{ secrets.DB_URL }}"
-            DB_USERNAME="${{ secrets.DB_USERNAME }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_DRIVER="${{ secrets.DB_DRIVER }}"
-            HIBERNATE_DIALECT="${{ secrets.HIBERNATE_DIALECT }}"
-            JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            JWT_EXPIRATION_MS="${{ secrets.JWT_EXPIRATION_MS }}"
-            API_URL="${{ secrets.API_URL }}"
-            FRONTEND_URL="${{ secrets.FRONTEND_URL }}"
-            SMTP_HOST="${{ secrets.SMTP_HOST }}"
-            SMTP_PORT="${{ secrets.SMTP_PORT }}"
-            SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
-            SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
-            UPLOADS_DIR="${{ secrets.UPLOADS_DIR }}"
-            MAX_FILE_SIZE="${{ secrets.MAX_FILE_SIZE }}"
-            MAX_REQUEST_SIZE="${{ secrets.MAX_REQUEST_SIZE }}"
-            IMAGE_BACKEND="${{ needs.build-and-push.outputs.image_backend }}"
-            IMAGE_FRONTEND="${{ needs.build-and-push.outputs.image_frontend }}"
+            echo "=== 1. GENERANDO ARCHIVO .ENV ==="
+            cat << 'ENVFILE' > .env
+            DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DRIVER=${{ secrets.DB_DRIVER }}
+            HIBERNATE_DIALECT=${{ secrets.HIBERNATE_DIALECT }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
+            API_URL=${{ secrets.API_URL }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            UPLOADS_DIR=${{ secrets.UPLOADS_DIR }}
+            MAX_FILE_SIZE=${{ secrets.MAX_FILE_SIZE }}
+            MAX_REQUEST_SIZE=${{ secrets.MAX_REQUEST_SIZE }}
+            IMAGE_BACKEND=${{ needs.build-and-push.outputs.image_backend }}
+            IMAGE_FRONTEND=${{ needs.build-and-push.outputs.image_frontend }}
             ENVFILE
 
-            # Reemplaza '$' por '$$' dentro del .env para evitar interpolaciones de Docker Compose
-            sed 's/\$/\$\$/g' .env.tmp > .env
-            rm .env.tmp
             chmod 600 .env
 
-            echo "=== 2. DIAGNÓSTICO Y LIMPIEZA DE CONTENEDORES/VOLÚMENES ==="
-            docker compose -f docker-compose.prod.yml logs db || true
-
-            # Forzar la detención rápida y eliminación de volúmenes
-            docker compose -f docker-compose.prod.yml down --volumes --remove-orphans -t 2 || true
-
-            # Eliminar procesos MySQL huérfanos que mantengan bloqueados los archivos en el host
-            pkill -f mysqld || true
+            echo "=== 2. DETENCIÓN Y LIMPIEZA SEGURA ==="
+            # Usar un tiempo de gracia estándar para que MySQL cierre de forma limpia sin generar bloqueos
+            docker compose -f docker-compose.prod.yml down -t 15 --remove-orphans || true
 
             echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
