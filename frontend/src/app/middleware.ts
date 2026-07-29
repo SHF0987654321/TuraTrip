@@ -18,47 +18,68 @@ function parseJwtPayload(token: string) {
   }
 }
 
+function isTokenExpired(payload: any): boolean {
+  if (!payload || !payload.exp) return true;
+  const currentTime = Math.floor(Date.now() / 1000);
+  return payload.exp < currentTime;
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
+  const payload = token ? parseJwtPayload(token) : null;
+  const tokenValido = Boolean(token && payload && !isTokenExpired(payload));
+
   const rutasAuth = ["/login", "/registro"];
   const esRutaAuth = rutasAuth.some((ruta) => pathname.startsWith(ruta));
   const esBienvenida = pathname === "/bienvenida";
-  const esRutaAdmin =
-    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const esRutaAdmin = pathname.startsWith("/dashboard");
+  const esPerfil = pathname.startsWith("/perfil");
   const esRaiz = pathname === "/";
 
-  // 1. USUARIO SIN TOKEN (NO AUTENTICADO)
-  if (!token) {
+  // Helper para redirigir y limpiar cookie corrupta/expirada si existía
+  const redirectClean = (targetUrl: string) => {
+    const res = NextResponse.redirect(new URL(targetUrl, request.url));
+    if (token) res.cookies.delete("token");
+    return res;
+  };
+
+  // -------------------------------------------------------------
+  // CASO 1: USUARIO NO AUTENTICADO (O CON TOKEN EXPIRADO)
+  // -------------------------------------------------------------
+  if (!tokenValido) {
+    // A) Si va al dominio raíz (dominio.com/), redirigir a la landing de bienvenida
     if (esRaiz) {
-      return NextResponse.redirect(new URL("/bienvenida", request.url));
+      return redirectClean("/bienvenida");
     }
 
-    if (!esRutaAuth && !esBienvenida) {
-      return NextResponse.redirect(new URL("/login", request.url));
+    // B) Si intenta ir a áreas estrictamente privadas (perfil, admin dashboard)
+    if (esPerfil || esRutaAdmin) {
+      return redirectClean("/login");
     }
 
+    // C) NOTA: Las rutas públicas como /publicaciones/123, /bienvenida, /login, /registro
+    // NO se bloquean y se dejan pasar.
     return NextResponse.next();
   }
 
-  // 2. USUARIO CON TOKEN INTENTANDO ACCEDER A RUTAS DE AUTENTICACIÓN
+  // -------------------------------------------------------------
+  // CASO 2: USUARIO CON TOKEN VÁLIDO (AUTENTICADO)
+  // -------------------------------------------------------------
+
+  // Si intenta ir a login, registro o la pantalla de bienvenida, lo mandamos al Feed (/)
   if (esRutaAuth || esBienvenida) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 3. PROTECCIÓN DE RUTA ADMIN (/dashboard)
+  // Protección del Dashboard de Administrador
   if (esRutaAdmin) {
-    const payload = parseJwtPayload(token);
-
-    // Tu JwtUtils.java guarda el claim bajo la llave "roles"
     const roles: string[] = Array.isArray(payload?.roles) ? payload.roles : [];
-
     const esAdmin = roles.some(
       (rol) => rol === "ADMIN" || rol === "ROLE_ADMIN"
     );
 
-    // Si no es admin, lo redirigimos al inicio en vez de soltar un 403 en JSON
     if (!esAdmin) {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -68,16 +89,16 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  /*
+   * Excluimos recursos estáticos (_next, imágenes, favicon, api) y dejamos
+   * las rutas controladas explícitamente por la app.
+   */
   matcher: [
     "/",
-    "/perfil",
-    "/perfil/:path*",
-    "/publicaciones",
-    "/publicaciones/:path*",
-    "/dashboard",
-    "/dashboard/:path*",
     "/bienvenida",
     "/login",
     "/registro",
+    "/perfil/:path*",
+    "/dashboard/:path*",
   ],
 };

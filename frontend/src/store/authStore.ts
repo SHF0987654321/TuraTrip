@@ -12,6 +12,21 @@ interface AuthState {
   setHydrated: (hydrated: boolean) => void;
 }
 
+// Helper para setear/limpiar cookie de forma consistente
+const syncTokenCookie = (token: string | null) => {
+  if (typeof document === "undefined") return;
+
+  const isProduction = process.env.NODE_ENV === "production";
+  const secureFlag = isProduction ? "; Secure" : "";
+
+  if (token) {
+    const maxAge = 7 * 24 * 60 * 60; // 7 días
+    document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+  } else {
+    document.cookie = `token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
+  }
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -19,13 +34,16 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       isHydrated: false,
 
-      // Se limpia el token de saltos de línea y espacios al guardarlo
       setAuth: (token, usuario) => {
         const cleanToken = token
           ? String(token)
               .replace(/[\r\n\s]+/g, "")
               .trim()
           : null;
+
+        // Sincronizar cookie para Next Middleware
+        syncTokenCookie(cleanToken);
+
         set({ token: cleanToken, usuario });
       },
 
@@ -35,11 +53,8 @@ export const useAuthStore = create<AuthState>()(
         })),
 
       logout: () => {
-        if (typeof document !== "undefined") {
-          const isProduction = process.env.NODE_ENV === "production";
-          const secureFlag = isProduction ? "; Secure" : "";
-          document.cookie = `token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
-        }
+        // Eliminar cookie
+        syncTokenCookie(null);
         set({ token: null, usuario: null });
       },
 
@@ -53,6 +68,10 @@ export const useAuthStore = create<AuthState>()(
         usuario: state.usuario,
       }),
       onRehydrateStorage: () => (state) => {
+        // Al rehidratar desde localStorage, aseguramos que la cookie esté alineada
+        if (state?.token) {
+          syncTokenCookie(state.token);
+        }
         state?.setHydrated(true);
       },
     }

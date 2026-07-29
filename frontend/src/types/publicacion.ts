@@ -30,6 +30,9 @@ export interface PublicacionRequest {
   titulo: string;
   descripcion: string;
   categoria?: string | null;
+  latitud?: number;
+  longitud?: number;
+  direccion?: string | null;
 }
 
 export interface PageResponse<T> {
