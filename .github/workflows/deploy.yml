@@ -146,3 +146,4 @@ jobs:
             fi
 
             docker image prune -f
+            docker logout ghcr.io

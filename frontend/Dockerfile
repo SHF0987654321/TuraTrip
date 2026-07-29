@@ -1,14 +1,25 @@
 FROM node:22-alpine
+
 WORKDIR /app
+
 COPY package.json package-lock.json* ./
+
 RUN npm install --legacy-peer-deps --no-audit --no-fund
+
 COPY . .
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
 ARG NEXT_PUBLIC_API_URL
 ARG INTERNAL_BACKEND_URL
+
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV INTERNAL_BACKEND_URL=$INTERNAL_BACKEND_URL
+
+RUN npm run build
+
 EXPOSE 3000
-CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0"]
+
+CMD ["npm", "start", "--", "-H", "0.0.0.0"]
