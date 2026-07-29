@@ -13,11 +13,9 @@ export function useAuthActions() {
 
   const login = async (data: LoginPayload) => {
     const res = await authService.login(data);
-    setAuth(res.token, res.usuario);
 
-    const isProduction = process.env.NODE_ENV === "production";
-    const secureFlag = isProduction ? "; Secure" : "";
-    document.cookie = `token=${res.token}; path=/; max-age=86400; SameSite=Lax${secureFlag}`;
+    // setAuth limpia el token y sincroniza la cookie automáticamente
+    setAuth(res.token, res.usuario);
 
     // Mapeamos los roles recibidos en UsuarioResponse (Set<RolResponse>)
     const roles = res.usuario?.roles || [];
@@ -29,7 +27,7 @@ export function useAuthActions() {
         r?.nombre === "ROLE_ADMIN"
     );
 
-    // Si es ADMIN lo mandamos al dashboard, si no a la página principal
+    // Redirección condicional según el rol
     if (esAdmin) {
       router.push("/dashboard");
     } else {
