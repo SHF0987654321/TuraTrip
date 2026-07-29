@@ -107,15 +107,18 @@ jobs:
             DB_ROOT_PASS=$(echo '${{ secrets.DB_ROOT_PASSWORD }}' | sed 's/\$/\$\$/g')
             DB_USER_PASS=$(echo '${{ secrets.DB_PASSWORD }}' | sed 's/\$/\$\$/g')
 
+            # Sanitizar JWT_SECRET removiendo posibles saltos de línea/retornos de carro
+            JWT_SEC=$(echo '${{ secrets.JWT_SECRET }}' | tr -d '\r\n')
+
             cat << ENVFILE > .env
             DB_ROOT_PASSWORD=${DB_ROOT_PASS}
             DB_NAME=${{ secrets.DB_NAME }}
-            DB_URL=${{ secrets.DB_URL }}
+            DB_URL="${{ secrets.DB_URL }}"
             DB_USERNAME=${{ secrets.DB_USERNAME }}
             DB_PASSWORD=${DB_USER_PASS}
             DB_DRIVER=${{ secrets.DB_DRIVER }}
             HIBERNATE_DIALECT=${{ secrets.HIBERNATE_DIALECT }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_SECRET="${JWT_SEC}"
             JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
             API_URL=${{ secrets.API_URL }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
