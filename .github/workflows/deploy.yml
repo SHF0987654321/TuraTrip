@@ -103,42 +103,43 @@ jobs:
             fi
 
             echo "=== 1. GENERANDO ARCHIVO .ENV ==="
-            cat << 'ENVFILE' > .env
-            DB_ROOT_PASSWORD='${{ secrets.DB_ROOT_PASSWORD }}'
-            DB_NAME='${{ secrets.DB_NAME }}'
-            DB_URL='${{ secrets.DB_URL }}'
-            DB_USERNAME='${{ secrets.DB_USERNAME }}'
-            DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
-            DB_DRIVER='${{ secrets.DB_DRIVER }}'
-            HIBERNATE_DIALECT='${{ secrets.HIBERNATE_DIALECT }}'
-            JWT_SECRET='${{ secrets.JWT_SECRET }}'
-            JWT_EXPIRATION_MS='${{ secrets.JWT_EXPIRATION_MS }}'
-            API_URL='${{ secrets.API_URL }}'
-            FRONTEND_URL='${{ secrets.FRONTEND_URL }}'
-            SMTP_HOST='${{ secrets.SMTP_HOST }}'
-            SMTP_PORT='${{ secrets.SMTP_PORT }}'
-            SMTP_USERNAME='${{ secrets.SMTP_USERNAME }}'
-            SMTP_PASSWORD='${{ secrets.SMTP_PASSWORD }}'
-            UPLOADS_DIR='${{ secrets.UPLOADS_DIR }}'
-            MAX_FILE_SIZE='${{ secrets.MAX_FILE_SIZE }}'
-            MAX_REQUEST_SIZE='${{ secrets.MAX_REQUEST_SIZE }}'
-            IMAGE_BACKEND='${{ needs.build-and-push.outputs.image_backend }}'
-            IMAGE_FRONTEND='${{ needs.build-and-push.outputs.image_frontend }}'
+            # Preparar contraseñas escapando el signo $ a $$ para Docker Compose
+            DB_ROOT_PASS=$(echo '${{ secrets.DB_ROOT_PASSWORD }}' | sed 's/\$/\$\$/g')
+            DB_USER_PASS=$(echo '${{ secrets.DB_PASSWORD }}' | sed 's/\$/\$\$/g')
+
+            cat << ENVFILE > .env
+            DB_ROOT_PASSWORD=${DB_ROOT_PASS}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${DB_USER_PASS}
+            DB_DRIVER=${{ secrets.DB_DRIVER }}
+            HIBERNATE_DIALECT=${{ secrets.HIBERNATE_DIALECT }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
+            API_URL=${{ secrets.API_URL }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            UPLOADS_DIR=${{ secrets.UPLOADS_DIR }}
+            MAX_FILE_SIZE=${{ secrets.MAX_FILE_SIZE }}
+            MAX_REQUEST_SIZE=${{ secrets.MAX_REQUEST_SIZE }}
+            IMAGE_BACKEND=${{ needs.build-and-push.outputs.image_backend }}
+            IMAGE_FRONTEND=${{ needs.build-and-push.outputs.image_frontend }}
             ENVFILE
 
             chmod 600 .env
 
             echo "=== 2. DETENCIÓN Y LIMPIEZA SEGURA ==="
-            # Intentar apagado elegante
             docker compose -f docker-compose.prod.yml down -t 15 --remove-orphans || true
-            # Fuerza bruta por si un contenedor queda trabado
             docker rm -f turatrip-db-prod turatrip-backend-prod turatrip-frontend-prod 2>/dev/null || true
 
             echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose -f docker-compose.prod.yml pull
 
-            # Intentar levantar y si falla, capturar logs antes de romper el workflow
             if ! docker compose -f docker-compose.prod.yml up -d --remove-orphans; then
               echo "=== ERROR AL LEVANTAR: IMPRIMIENDO LOGS DE LA BASE DE DATOS ==="
               docker compose -f docker-compose.prod.yml logs --tail=100
