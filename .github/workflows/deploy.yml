@@ -131,11 +131,11 @@ jobs:
 
             env_vars = [
                 "DB_ROOT_PASSWORD", "DB_NAME", "DB_URL", "DB_USERNAME",
-               "DB_PASSWORD", "DB_DRIVER", "HIBERNATE_DIALECT", "JPA_DDL_AUTO",
-               "JWT_SECRET", "JWT_EXPIRATION_MS", "API_URL", "FRONTEND_URL",
-               "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
-               "UPLOADS_DIR", "MAX_FILE_SIZE", "MAX_REQUEST_SIZE",
-               "IMAGE_BACKEND", "IMAGE_FRONTEND"
+                "DB_PASSWORD", "DB_DRIVER", "HIBERNATE_DIALECT", "JPA_DDL_AUTO",
+                "JWT_SECRET", "JWT_EXPIRATION_MS", "API_URL", "FRONTEND_URL",
+                "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
+                "UPLOADS_DIR", "MAX_FILE_SIZE", "MAX_REQUEST_SIZE",
+                "IMAGE_BACKEND", "IMAGE_FRONTEND"
             ]
 
             with open(".env", "w") as f:
