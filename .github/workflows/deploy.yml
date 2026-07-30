@@ -124,43 +124,28 @@ jobs:
             elif [ -S "$HOME/.docker/run/docker.sock" ]; then
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
-            echo "=== 1. GENERANDO ARCHIVO .ENV ==="
-            python3 -c "
+
+            echo "=== 1. GENERANDO ARCHIVO .ENV SEGURO ==="
+            python3 -c '''
             import os
 
             env_vars = [
-                'DB_ROOT_PASSWORD',
-                'DB_NAME',
-                'DB_URL',
-                'DB_USERNAME',
-                'DB_PASSWORD',
-                'DB_DRIVER',
-                'HIBERNATE_DIALECT',
-                'JPA_DDL_AUTO',
-                'JWT_SECRET',
-                'JWT_EXPIRATION_MS',
-                'API_URL',
-                'FRONTEND_URL',
-                'SMTP_HOST',
-                'SMTP_PORT',
-                'SMTP_USERNAME',
-                'SMTP_PASSWORD',
-                'UPLOADS_DIR',
-                'MAX_FILE_SIZE',
-                'MAX_REQUEST_SIZE',
-                'IMAGE_BACKEND',
-                'IMAGE_FRONTEND'
+                "DB_ROOT_PASSWORD", "DB_NAME", "DB_URL", "DB_USERNAME",
+                "DB_PASSWORD", "DB_DRIVER", "HIBERNATE_DIALECT", "JPA_DDL_AUTO",
+                "JWT_SECRET", "JWT_EXPIRATION_MS", "API_URL", "FRONTEND_URL",
+                "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
+                "UPLOADS_DIR", "MAX_FILE_SIZE", "MAX_REQUEST_SIZE",
+                "IMAGE_BACKEND", "IMAGE_FRONTEND"
             ]
 
-            with open('.env', 'w') as f:
-                f.write('COMPOSE_FILE=docker-compose.prod.yml\n')
-
+            with open(".env", "w") as f:
+                f.write("COMPOSE_FILE=docker-compose.prod.yml\n")
                 for var in env_vars:
                     if var in os.environ:
-                        # Reemplaza $ por $$ para que Docker Compose lo interprete como literal
-                        val = os.environ[var].replace('$', '$$')
-                        f.write(f'{var}={val}\n')
-            "
+                        val = os.environ[var].strip()
+                        val = val.replace("$", "$$")
+                        f.write(f"{var}={val}\n")
+            '''
             chmod 600 .env
 
             echo "=== 2. DETENCIÓN Y LIMPIEZA SEGURA ==="
@@ -172,7 +157,6 @@ jobs:
               2>/dev/null || true
 
             echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
-
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
               -u ${{ github.actor }} \
               --password-stdin
