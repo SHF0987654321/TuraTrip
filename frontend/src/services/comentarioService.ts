@@ -8,14 +8,14 @@ export interface ComentarioRequest {
 export const comentarioService = {
   listar: async (publicacionId: number | string) => {
     const res = await apiClient.get<Comentario[]>(
-      `/api/v1/publicaciones/${publicacionId}/comentarios`
+      `/v1/publicaciones/${publicacionId}/comentarios`
     );
     return res.data;
   },
 
   crear: async (publicacionId: number | string, data: ComentarioRequest) => {
     const res = await apiClient.post<Comentario>(
-      `/api/v1/publicaciones/${publicacionId}/comentarios`,
+      `/v1/publicaciones/${publicacionId}/comentarios`,
       data
     );
     return res.data;
@@ -27,7 +27,7 @@ export const comentarioService = {
     data: ComentarioRequest
   ) => {
     const res = await apiClient.put<Comentario>(
-      `/api/v1/publicaciones/${publicacionId}/comentarios/${comentarioId}`,
+      `/v1/publicaciones/${publicacionId}/comentarios/${comentarioId}`,
       data
     );
     return res.data;
@@ -35,13 +35,13 @@ export const comentarioService = {
 
   eliminar: async (publicacionId: number | string, comentarioId: number) => {
     await apiClient.delete(
-      `/api/v1/publicaciones/${publicacionId}/comentarios/${comentarioId}`
+      `/v1/publicaciones/${publicacionId}/comentarios/${comentarioId}`
     );
   },
 
   listarPorUsuario: async (usuarioId: number | string, page = 0, size = 10) => {
     const res = await apiClient.get<PageResponse<Comentario>>(
-      `/api/v1/usuarios/${usuarioId}/comentarios?page=${page}&size=${size}`
+      `/v1/usuarios/${usuarioId}/comentarios?page=${page}&size=${size}`
     );
     return res.data;
   },
