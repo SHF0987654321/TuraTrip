@@ -147,6 +147,7 @@ jobs:
                     f.write(f'{v}=\'{val_clean}\'\n')
             "
             chmod 600 .env
+            set -a; source .env; set +a
 
             echo "=== 2. DETENCIÓN Y LIMPIEZA SEGURA ==="
             docker compose down -t 15 --remove-orphans || true
@@ -156,23 +157,49 @@ jobs:
               turatrip-frontend-prod \
               2>/dev/null || true
 
-            echo "=== 3. DESPLIEGUE E INICIALIZACIÓN ==="
+            echo "=== 3. LOGIN EN GHCR Y DESCARGA DE IMÁGENES ==="
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
               -u ${{ github.actor }} \
               --password-stdin
 
             docker compose pull
 
+            echo "=== 4. LEVANTANDO BASE DE DATOS PRIMERO ==="
+            if ! docker compose up -d db; then
+              echo "=== ERROR AL LEVANTAR LA BASE DE DATOS ==="
+              docker compose logs db --tail=100
+              exit 1
+            fi
+
+            echo "Esperando a que MySQL esté saludable..."
+            for i in $(seq 1 30); do
+              status=$(docker inspect --format='{{.State.Health.Status}}' turatrip-db-prod 2>/dev/null || echo "starting")
+              if [ "$status" = "healthy" ]; then
+                echo "MySQL está healthy."
+                break
+              fi
+              sleep 2
+            done
+
+            echo "=== 5. SINCRONIZANDO CREDENCIALES DE APLICACIÓN ==="
+            # Usa MYSQL_PWD por variable de entorno para no exponer el password en la línea de comandos
+            docker exec -e MYSQL_PWD="$DB_ROOT_PASSWORD" -i turatrip-db-prod \
+              mysql -uroot <<SQL
+            ALTER USER IF EXISTS '${DB_USERNAME}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
+            FLUSH PRIVILEGES;
+            SQL
+
+            echo "=== 6. DESPLIEGUE COMPLETO ==="
             if ! docker compose up -d --remove-orphans; then
               echo "=== ERROR AL LEVANTAR LOS CONTENEDORES ==="
               docker compose logs --tail=100
               exit 1
             fi
 
-            echo "=== 4. LIMPIEZA DE IMÁGENES SIN USO ==="
+            echo "=== 7. LIMPIEZA DE IMÁGENES SIN USO ==="
             docker image prune -f
 
-            echo "=== 5. CERRANDO SESIÓN EN GHCR ==="
+            echo "=== 8. CERRANDO SESIÓN EN GHCR ==="
             docker logout ghcr.io
 
             echo "=== DESPLIEGUE COMPLETADO ==="
