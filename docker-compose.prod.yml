@@ -20,14 +20,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "127.0.0.1",
-          "-u",
-          "root",
-          "-p${DB_ROOT_PASSWORD}",
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent || exit 1",
         ]
       interval: 10s
       timeout: 5s
