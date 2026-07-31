@@ -182,9 +182,8 @@ jobs:
             done
 
             echo "=== 5. SINCRONIZANDO CREDENCIALES DE APLICACIÓN ==="
-            # Usa MYSQL_PWD por variable de entorno para no exponer el password en la línea de comandos
             docker exec -e MYSQL_PWD="$DB_ROOT_PASSWORD" -i turatrip-db-prod \
-              mysql -uroot <<SQL
+              mysql -h 127.0.0.1 -uroot <<SQL
             ALTER USER IF EXISTS '${DB_USERNAME}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
             FLUSH PRIVILEGES;
             SQL
