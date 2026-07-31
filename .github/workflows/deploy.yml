@@ -125,29 +125,27 @@ jobs:
               export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
             fi
 
-            echo "=== 1. GENERANDO ARCHIVO .ENV SEGURO ==="
-            python3 -c '''
+            echo "=== 1. GENERANDO ARCHIVO .ENV SEGURO Y CLEAN ==="
+            python3 -c "
             import os
 
-            env_vars = [
-                "DB_ROOT_PASSWORD", "DB_NAME", "DB_URL", "DB_USERNAME",
-                "DB_PASSWORD", "DB_DRIVER", "HIBERNATE_DIALECT", "JPA_DDL_AUTO",
-                "JWT_SECRET", "JWT_EXPIRATION_MS", "API_URL", "FRONTEND_URL",
-                "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
-                "UPLOADS_DIR", "MAX_FILE_SIZE", "MAX_REQUEST_SIZE",
-                "IMAGE_BACKEND", "IMAGE_FRONTEND"
+            vars_list = [
+                'COMPOSE_FILE', 'DB_ROOT_PASSWORD', 'DB_NAME', 'DB_URL', 'DB_USERNAME',
+                'DB_PASSWORD', 'DB_DRIVER', 'HIBERNATE_DIALECT', 'JPA_DDL_AUTO',
+                'JWT_SECRET', 'JWT_EXPIRATION_MS', 'API_URL', 'FRONTEND_URL',
+                'SMTP_HOST', 'SMTP_PORT', 'SMTP_USERNAME', 'SMTP_PASSWORD',
+                'UPLOADS_DIR', 'MAX_FILE_SIZE', 'MAX_REQUEST_SIZE',
+                'IMAGE_BACKEND', 'IMAGE_FRONTEND'
             ]
 
-            with open(".env", "w") as f:
-               f.write("COMPOSE_FILE=docker-compose.prod.yml\n")
-               for var in env_vars:
-                   if var in os.environ:
-                        # Elimina saltos de linea internos (\r, \n) y espacios a los lados
-                        val = os.environ[var].replace("\r", "").replace("\n", "").strip()
-                        # MEJOR PRÁCTICA: Envolver entre comillas simples ' '
-                        # Esto evita que Docker Compose intente interpolar el signo $
-                        f.write(f"{var}='{val}'\n")
-            '''
+            os.environ['COMPOSE_FILE'] = 'docker-compose.prod.yml'
+
+            with open('.env', 'w') as f:
+               for v in vars_list:
+                    val = os.environ.get(v, '').replace('\r', '').replace('\n', '').strip()
+                    val_clean = val.replace(\"'\", \"'\\\\''\")
+                    f.write(f'{v}=\'{val_clean}\'\n')
+            "
             chmod 600 .env
 
             echo "=== 2. DETENCIÓN Y LIMPIEZA SEGURA ==="
