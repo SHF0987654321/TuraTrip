@@ -21,7 +21,7 @@ Para dar seguimiento a nuestras tareas, historias de usuario y sprints, utilizam
 | Capa          | Tecnología                             |
 | :------------ | :------------------------------------- |
 | Frontend      | Next.js 16 + TypeScript + Tailwind CSS |
-| Backend       | Spring Boot 3 + Java 21                |
+| Backend       | Spring Boot 4 + Java 21                |
 | Base de datos | MySQL 9.7                              |
 | Contenedores  | Docker + Docker Compose                |
 
