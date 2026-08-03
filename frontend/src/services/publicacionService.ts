@@ -38,10 +38,13 @@ export const publicacionService = {
 
   crear: async (datos: PublicacionRequest, archivo: File) => {
     const formData = new FormData();
-    formData.append(
-      "publicacion",
-      new Blob([JSON.stringify(datos)], { type: "application/json" })
-    );
+
+    // Se define explícitamente el Content-Type application/json en el Blob
+    const jsonBlob = new Blob([JSON.stringify(datos)], {
+      type: "application/json",
+    });
+
+    formData.append("publicacion", jsonBlob);
     formData.append("archivo", archivo);
 
     const res = await apiClient.post<Publicacion>(
